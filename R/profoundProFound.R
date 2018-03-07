@@ -242,7 +242,7 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       if(verbose){message(paste(' - boundstats =', boundstats))}
       segstats=profoundSegimStats(image=image, segim=segim, mask=mask, sky=sky, skyRMS=skyRMS, magzero=magzero, gain=gain, pixscale=pixscale, header=header, sortcol=sortcol, decreasing=decreasing, rotstats=rotstats, boundstats=boundstats, offset=offset)
       segstats=cbind(segstats, iter=selseg, origfrac=origfrac)
-      segstats=cbind(segstats, flag_keep=segstats$origfrac> median(segstats$origfrac[segstats$iter==iters]) | segstats$iter<iters)
+      segstats=cbind(segstats, flag_keep=segstats$origfrac>= median(segstats$origfrac[segstats$iter==iters]) | segstats$iter<iters)
     }else{
       if(verbose){message("Skipping segmentation statistics - segstats set to FALSE")}
       segstats=NULL
@@ -278,15 +278,17 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       SBlim=NULL
     }
     if(missing(header)){header=NULL}
-    if(keepim==FALSE){image=NULL}
+    if(keepim==FALSE){image=NULL; mask=NULL}
+    if(missing(mask)){mask=NULL}
     if(verbose){message(paste('ProFound is finished! -',round(proc.time()[3]-timestart,3),'sec'))}
-    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=objects_redo, sky=sky, skyRMS=skyRMS, image=image, segstats=segstats, Nseg=dim(segstats)[1], near=near, group=group, header=header, SBlim=SBlim, magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
+    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=objects_redo, sky=sky, skyRMS=skyRMS, image=image, mask=mask, segstats=segstats, Nseg=dim(segstats)[1], near=near, group=group, header=header, SBlim=SBlim, magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
   }else{
     if(missing(header)){header=NULL}
-    if(keepim==FALSE){image=NULL}
+    if(keepim==FALSE){image=NULL; mask=NULL}
+    if(missing(mask)){mask=NULL}
     if(verbose){message('No objects in segmentation map - skipping dilations and CoG')}
     if(verbose){message(paste('ProFound is finished! -',round(proc.time()[3]-timestart,3),'sec'))}
-    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=segim, sky=sky, skyRMS=skyRMS, image=image, segstats=NULL, Nseg=0, near=NULL, group=NULL, header=header, SBlim=NULL,  magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
+    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=segim, sky=sky, skyRMS=skyRMS, image=image, mask=mask, segstats=NULL, Nseg=0, near=NULL, group=NULL, header=header, SBlim=NULL,  magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
   }
   class(output)='profound'
   return=output
@@ -333,11 +335,11 @@ plot.profound=function(x, ...){
     maghist(x$segstats$iter, breaks=seq(-0.5,max(x$segstats$iter, na.rm=TRUE)+0.5,by=1), majorn=max(x$segstats$iter, na.rm=TRUE)+1, xlab='Number of Dilations', ylab='#')
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE)
+    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE)
     
     par(mar=c(3.5,3.5,0.5,0.5))
     fluxrat=x$segstats$flux/x$segstats$flux_err
-    magplot(x$segstats$SB_N90, fluxrat, pch='.', col=hsv(alpha=0.5), ylim=c(0.5,max(fluxrat, na.rm=TRUE)), cex=3, xlab='SB90 / mag/asec-sq', ylab='Flux/Flux-Error', grid=TRUE, log='y')
+    magplot(x$segstats$SB_N90, fluxrat, pch='.', col=hsv(alpha=0.5), ylim=c(0.5,max(fluxrat, 1, na.rm=TRUE)), cex=3, xlab='SB90 / mag/asec-sq', ylab='Flux/Flux-Error', grid=TRUE, log='y')
   
   }else{
     
@@ -370,11 +372,11 @@ plot.profound=function(x, ...){
     maghist(x$segstats$iter, breaks=seq(-0.5,max(x$segstats$iter, na.rm=TRUE)+0.5,by=1), majorn=max(x$segstats$iter, na.rm=TRUE)+1, xlab='Number of Dilations', ylab='#')
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / Pixels', grid=TRUE)
+    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / Pixels', grid=TRUE)
     
     par(mar=c(3.5,3.5,0.5,0.5))
     fluxrat=x$segstats$flux/x$segstats$flux_err
-    magplot(x$segstats$SB_N90, fluxrat, pch='.', col=hsv(alpha=0.5), ylim=c(0.5,max(fluxrat, na.rm=TRUE)), cex=3, xlab='SB90 / mag/pix-sq', ylab='Flux/Flux-Error', grid=TRUE, log='y')
+    magplot(x$segstats$SB_N90, fluxrat, pch='.', col=hsv(alpha=0.5), ylim=c(0.5,max(fluxrat, 1, na.rm=TRUE)), cex=3, xlab='SB90 / mag/pix-sq', ylab='Flux/Flux-Error', grid=TRUE, log='y')
   }
   
 }
