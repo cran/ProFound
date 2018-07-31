@@ -87,23 +87,36 @@
     # print(flux)
     # print(temp)
   
-    loc50=min(which(temp>=0.5))
-    loc50cumsumhi=temp[loc50]
-    loc50cumsumlo=temp[loc50-1]
-    N50seg=N100seg-(loc50-1)+(0.5-loc50cumsumlo)/(loc50cumsumhi-loc50cumsumlo)
+    if(sumflux>0){
+      loc50=min(which(temp>=0.5))
+      loc50cumsumhi=temp[loc50]
+      loc50cumsumlo=temp[loc50-1]
+      N50seg=N100seg-(loc50-1)+(0.5-loc50cumsumlo)/(loc50cumsumhi-loc50cumsumlo)
+      
+      loc90=min(which(temp>=0.1))
+      loc90cumsumhi=temp[loc90]
+      loc90cumsumlo=temp[loc90-1]
+      N90seg=N100seg-(loc90-1)+(0.1-loc90cumsumlo)/(loc90cumsumhi-loc90cumsumlo)
     
-    loc90=min(which(temp>=0.1))
-    loc90cumsumhi=temp[loc90]
-    loc90cumsumlo=temp[loc90-1]
-    N90seg=N100seg-(loc90-1)+(0.1-loc90cumsumlo)/(loc90cumsumhi-loc90cumsumlo)
-  
-    cenfrac=temp[N100seg]-temp[N100seg-1]
+      cenfrac=temp[N100seg]-temp[N100seg-1]
+    }else{
+      N100seg=length(flux)
+      N50seg=NA
+      N90seg=NA
+      cenfrac=NA
+      mode(N50seg)='numeric'
+      mode(N90seg)='numeric'
+      mode(cenfrac)='numeric'
+    }
     
   }else{
-    sumflux=0
-    N50seg=0
-    N90seg=0
-    cenfrac=0
+    sumflux=NA
+    N100seg=length(flux)
+    N50seg=N100seg*0.5
+    N90seg=N100seg*0.9
+    cenfrac=NA
+    mode(sumflux)='numeric'
+    mode(cenfrac)='numeric'
   }
   
   #N50seg=sum(temp>=0.5)
@@ -120,9 +133,9 @@ profoundMakeSegim=function(image, mask, objects, skycut=1, pixcut=3, tolerance=4
   call=match.call()
   if(verbose){message(' - Running MakeSegim:')}
   timestart = proc.time()[3]
-  if(!requireNamespace("imager", quietly = TRUE)){
-    stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
-  }
+  # if(!requireNamespace("imager", quietly = TRUE)){
+  #   stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
+  # }
   if(!requireNamespace("EBImage", quietly = TRUE)){
     stop('The EBImage package is needed for this function to work. Please install it from Bioconductor.', call. = FALSE)
   }
@@ -130,16 +143,16 @@ profoundMakeSegim=function(image, mask, objects, skycut=1, pixcut=3, tolerance=4
   #Treat image NAs as masked regions:
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    mask[is.na(image)]=1L
   }else{
     if(any(is.na(image))){
-      mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[is.na(image)]=1L
     }
   }
   
   if(missing(pixscale) & !missing(header)){
-    pixscale=profoundGetPixScale(header)
+    pixscale=getpixscale(header)
     if(verbose){message(paste(' - Extracted pixel scale from header provided:',round(pixscale,3),'asec/pixel.'))}
   }
   
@@ -169,7 +182,15 @@ profoundMakeSegim=function(image, mask, objects, skycut=1, pixcut=3, tolerance=4
  
   if(smooth){
     if(verbose){message(paste(" - Smoothing the image -", round(proc.time()[3]-timestart,3), "sec"))}
-    image=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+    if(requireNamespace("imager", quietly = TRUE)){
+      image=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+    }else{
+      if(!requireNamespace("EBImage", quietly = TRUE)){
+      stop('The imager or EBImage package is needed for smoothing to work. Please install from CRAN.', call. = FALSE)
+      }
+      message(" - WARNING: imager package not installed, using EBImage gblur smoothing!")
+      image=as.matrix(EBImage::gblur(image,sigma))
+    }
   }else{
     if(verbose){message(" - Skipping smoothing - smooth set to FALSE")}
   }
@@ -189,9 +210,10 @@ profoundMakeSegim=function(image, mask, objects, skycut=1, pixcut=3, tolerance=4
   }else{
     segim=image
   }
+  mode(segim)='integer'
   
   segtab=tabulate(segim)
-  segim[segim %in% which(segtab<pixcut)]=0
+  segim[segim %in% which(segtab<pixcut)]=0L
 
   if(plot){
     if(verbose){message(paste(" - Plotting segments -", round(proc.time()[3]-timestart,3), "sec"))}
@@ -201,7 +223,8 @@ profoundMakeSegim=function(image, mask, objects, skycut=1, pixcut=3, tolerance=4
   }
   
   objects=segim
-  objects[objects!=0]=1
+  objects[objects!=0]=1L
+  mode(objects)='integer'
   
   if(hassky==FALSE){
     if(verbose){message(paste(" - Making final local estimate of the sky -", round(proc.time()[3]-timestart,3), "sec"))}
@@ -254,23 +277,23 @@ profoundMakeSegimExpand=function(image, segim, mask, objects, skycut=1, SBlim, m
   
   call=match.call()
   
-  if(!requireNamespace("imager", quietly = TRUE)){
-    stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
-  }
+  # if(!requireNamespace("imager", quietly = TRUE)){
+  #   stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
+  # }
   
   #Treat image NAs as masked regions:
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    mask[is.na(image)]=1L
   }else{
     if(any(is.na(image))){
-      mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[is.na(image)]=1L
     }
   }
   
   if(missing(pixscale) & !missing(header)){
-    pixscale=profoundGetPixScale(header)
+    pixscale=getpixscale(header)
     if(verbose){message(paste(' - Extracted pixel scale from header provided:',round(pixscale,3),'asec/pixel.'))}
   }
   
@@ -296,8 +319,16 @@ profoundMakeSegimExpand=function(image, segim, mask, objects, skycut=1, SBlim, m
   image[!is.finite(image)]=0
 
   if(smooth){
-    if(verbose){message(paste(" - Smoothing image -", round(proc.time()[3]-timestart,3), "sec"))}
-    image=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+    if(verbose){message(paste(" - Smoothing the image -", round(proc.time()[3]-timestart,3), "sec"))}
+    if(requireNamespace("imager", quietly = TRUE)){
+      image=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+    }else{
+      if(!requireNamespace("EBImage", quietly = TRUE)){
+      stop('The imager or EBImage package is needed for smoothing to work. Please install from CRAN.', call. = FALSE)
+      }
+      message(" - WARNING: imager package not installed, using EBImage gblur smoothing!")
+      image=as.matrix(EBImage::gblur(image,sigma))
+    }
   }else{
     if(verbose){message(" - Skipping smoothing - smooth set to FALSE")}
   }
@@ -309,33 +340,36 @@ profoundMakeSegimExpand=function(image, segim, mask, objects, skycut=1, SBlim, m
     image[image<skycut]=0
   }
   if(!missing(mask)){
-    image[mask!=0]=0
+    image[mask!=0]=NA
   }
   #kernel=profoundMakeGaussianPSF(fwhm = expandsigma, dim=dim)
   maxmat=matrix(min(image, na.rm=TRUE), xlen, ylen)
-  segim_new=matrix(0,xlen,ylen)
+  segim_new=segim
   segvec=which(tabulate(segim)>0)
   segvec=segvec[segvec>0]
   if(expand[1]=='all'){expand=segvec}
   if(verbose){message(paste(" - Expanding segments -", round(proc.time()[3]-timestart,3), "sec"))}
-  for(i in segvec){
+  for(i in expand){
     segtemp=segim
-    segtemp[segim==i]=1
-    segtemp[segim!=i]=0
+    segtemp[segim==i]=1L
+    segtemp[segim!=i]=0L
+    segim_new[segim_new==i]=0L
     if(i %in% expand){
-      #temp=profoundConvolvePSF(segtemp, kernel)
       temp=profoundImBlur(segtemp, expandsigma)
     }else{
       temp=segtemp
     }
     tempmult=temp*image
-    segsel=tempmult>maxmat & temp>0.01 & image>skycut
+    segsel=which(tempmult>maxmat & temp>0.01 & image>skycut)
     segim_new[segsel]=i
     maxmat[segsel]=tempmult[segsel]
   }
+  mode(segim_new)='integer'
+  segim_new[segim>0]=segim[segim>0]
   
   objects=segim_new
-  objects[objects!=0]=1
+  objects[objects!=0]=1L
+  mode(objects)='integer'
   
   if(plot){
     if(verbose){message(paste(" - Plotting segments -", round(proc.time()[3]-timestart,3), "sec"))}
@@ -402,16 +436,16 @@ profoundMakeSegimDilate=function(image, segim, mask, size=9, shape='disc', expan
   #Treat image NAs as masked regions:
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    mask[is.na(image)]=1L
   }else{
     if(any(is.na(image))){
-      mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[is.na(image)]=1L
     }
   }
   
   if(missing(pixscale) & !missing(header)){
-    pixscale=profoundGetPixScale(header)
+    pixscale=getpixscale(header)
     if(verbose){message(paste(' - Extracted pixel scale from header provided:',round(pixscale,3),'asec/pixel.'))}
   }
   
@@ -422,18 +456,16 @@ profoundMakeSegimDilate=function(image, segim, mask, size=9, shape='disc', expan
   if(expand=='all'){
     segim_new=segim
     maxorig=max(segim_new, na.rm=TRUE)
-    segim_new[segim_new>0]=maxorig+1-segim_new[segim_new>0]
-    segim_new=EBImage::dilate(segim_new, kern)
-    segim_new[segim_new>0]=maxorig+1-segim_new[segim_new>0]
-    segim_new=EBImage::imageData(segim_new)
-    segim_new[segim!=0]=segim[segim!=0]
+    segim_new[segim_new>0]=maxorig+1L-segim_new[segim_new>0]
+    segim_new=EBImage::imageData(EBImage::dilate(segim_new, kern))
+    segim_new[segim_new>0]=maxorig+1L-segim_new[segim_new>0]
   }else{
     segim_new=segim
-    segim_new[segim_new!=expand]=0
-    segim_new=EBImage::dilate(segim_new, kern)
-    segim_new=EBImage::imageData(segim_new)
-    segim_new[segim!=0]=segim[segim!=0]
+    segim_new[!(segim_new %in% expand)]=0L
+    segim_new=EBImage::imageData(EBImage::dilate(segim_new, kern))
   }
+  segim_new[segim!=0]=segim[segim!=0]
+  mode(segim_new)='integer'
   
   if(rembig){
     rm(segim)
@@ -441,8 +473,7 @@ profoundMakeSegimDilate=function(image, segim, mask, size=9, shape='disc', expan
   }
   
   if(!missing(mask)){
-    image[mask!=0]=0
-    segim_new[mask!=0]=0
+    image[mask!=0]=NA
   }
   
   if(stats & !missing(image)){
@@ -454,7 +485,8 @@ profoundMakeSegimDilate=function(image, segim, mask, size=9, shape='disc', expan
   }
   
   objects=segim_new
-  objects[objects!=0]=1
+  objects[objects!=0]=1L
+  mode(objects)='integer'
   
   if(plot){
     profoundSegimPlot(image=image, segim=segim_new, mask=mask, sky=sky, ...)
@@ -479,18 +511,19 @@ profoundMakeSegimPropagate=function(image, segim, objects, mask, sky=0, lambda=1
   }
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    mask[is.na(image)]=1L
   }else{
     if(any(is.na(image))){
-      mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[is.na(image)]=1L
     }
   }
   
   if(missing(objects)){
     if(!missing(segim)){
       objects=segim
-      objects[objects != 0] = 1
+      objects[objects != 0] = 1L
+      mode(objects)='integer'
     }
   }
   
@@ -508,6 +541,7 @@ profoundMakeSegimPropagate=function(image, segim, objects, mask, sky=0, lambda=1
     #Because EBImage is odd we need to use mask to mean pixels to be propagated, i.e. where the ProFound mask=0
     propim=EBImage::imageData(EBImage::propagate(image_sky, seeds=segim, mask=(mask==0), lambda=lambda))
   }
+  mode(propim)='integer'
   
   if(rembig){
     rm(segim)
@@ -516,7 +550,8 @@ profoundMakeSegimPropagate=function(image, segim, objects, mask, sky=0, lambda=1
   }
   
   propim_sky=propim
-  propim_sky[objects>0]=0
+  propim_sky[objects>0]=0L
+  mode(propim_sky)='integer'
   
   if(plot){
     profoundSegimPlot(image=image_sky, segim=propim, mask=mask, ...)
@@ -533,10 +568,14 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   }
   
   if(missing(pixscale) & !missing(header)){
-    pixscale=profoundGetPixScale(header)
+    pixscale=getpixscale(header)
   }
   
-  hassky=!missing(sky)
+  if(!missing(sky)){
+    hassky=any(is.finite(sky))
+  }else{
+    hassky=FALSE
+  }
   if(hassky){
     if(length(hassky)==1 & sky[1]==0){
       hassky=FALSE
@@ -544,7 +583,11 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
       image=image-sky
     }
   }
-  hasskyRMS=!missing(skyRMS)
+  if(!missing(skyRMS)){
+    hasskyRMS=any(is.finite(skyRMS))
+  }else{
+    hasskyRMS=FALSE
+  }
   if(hasskyRMS){
     if(length(hasskyRMS)==1 & skyRMS[1]==0){hasskyRMS=FALSE}
   }
@@ -552,15 +595,15 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   #Treat image NAs as masked regions:
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    mask[is.na(image)]=1L
   }else{
     if(any(is.na(image))){
-      mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[is.na(image)]=1L
     }
   }
   
-  #Set masked things to 0, to be safe:
+  #Set masked things to NA, to be safe:
   
   if(!missing(mask)){
     image[mask!=0]=NA
@@ -620,9 +663,9 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   fluxout=tempDT[,.fluxcalc(flux), by=segID]
   mag=profoundFlux2Mag(flux=fluxout$flux, magzero=magzero)
   
-  if(any(flux==0)){
-    fluxout$N50seg[flux==0]=fluxout$N100seg[flux==0]
-    fluxout$N90seg[flux==0]=fluxout$N100seg[flux==0]
+  if(any(fluxout$flux==0, na.rm=TRUE)){
+    fluxout$N50seg[fluxout$flux==0]=fluxout$N100seg[fluxout$flux==0]
+    fluxout$N90seg[fluxout$flux==0]=fluxout$N100seg[fluxout$flux==0]
   }
   
   if(hassky){
@@ -673,8 +716,8 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   
   xmax=xcen
   ymax=ycen
-  xmax[fluxout$N100seg>0]=tempDT[,x[which.max(flux)]-0.5,by=segID]$V1
-  ymax[fluxout$N100seg>0]=tempDT[,y[which.max(flux)]-0.5,by=segID]$V1
+  xmax[!is.na(fluxout$flux)]=tempDT[,x[which.max(flux)]-0.5,by=segID]$V1
+  ymax[!is.na(fluxout$flux)]=tempDT[,y[which.max(flux)]-0.5,by=segID]$V1
   
   sep=sqrt((xcen-xmax)^2+(ycen-ymax)^2)*pixscale
   
@@ -704,6 +747,7 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   R100seg=sqrt(fluxout$N100seg/(axrat*pi))*pixscale
   
   con=R50seg/R90seg
+  con[R90seg==0]=NA
 
   SB_N50=profoundFlux2SB(flux=fluxout$flux*0.5/fluxout$N50seg, magzero=magzero, pixscale=pixscale)
   SB_N90=profoundFlux2SB(flux=fluxout$flux*0.9/fluxout$N90seg, magzero=magzero, pixscale=pixscale)
@@ -724,7 +768,6 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
   }
   
   if(boundstats){
-    
     segim_inner=segim[(offset+1):(xlen-offset),(offset+1):(ylen-offset)]
     off_down=segim[(offset+1):(xlen-offset),(offset+1):(ylen-offset)-offset]
     off_left=segim[(offset+1):(xlen-offset)-offset,(offset+1):(ylen-offset)]
@@ -779,7 +822,7 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
     
     if(!missing(mask)){
       outer_mask=segim_inner>0 & (mask[2:(xlen-1)+1,2:(ylen-1)]==1 | mask[2:(xlen-1)-1,2:(ylen-1)]==1 | mask[2:(xlen-1),2:(ylen-1)+1]==1 | mask[2:(xlen-1),2:(ylen-1)-1]==1)
-      segim_mask=segim_inner
+      segim_mask=segim_edge
       segim_mask[outer_mask==0]=0
       tab_mask=tabulate(segim_mask)
       tab_mask=c(tab_mask,rep(0,max(segID)-length(tab_mask)))
@@ -796,8 +839,8 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
     }
     
     Nedge=Nedge+Nborder
-    Nsky=Nsky-Nmask #Raw Nsky-Nmask-Nborder, to correct for masked pixels
-    Nobject=Nedge-Nsky-Nmask-Nborder # Nedge-Nsky
+    #Nsky=Nsky-Nmask #Raw Nsky-Nmask-Nborder, to correct for masked pixels
+    Nobject=Nedge-Nsky-Nborder # Nedge-Nsky
     edge_frac=Nsky/Nedge
 
     #Using Ramanujan approximation from Wikipedia:
@@ -818,7 +861,17 @@ profoundSegimStats=function(image, segim, mask, sky=0, skyRMS=0, magzero=0, gain
     edge_frac=NA
     edge_excess=NA
   }
-    
+  
+  if(anyNA(fluxout$flux)){
+    bad=is.na(fluxout$flux)
+    asymm[bad]=NA
+    flux_reflect[bad]=NA
+    mag_reflect[bad]=NA
+    signif[bad]=NA
+    FPlim[bad]=NA
+    edge_excess[bad]=NA
+  }
+  
   segstats=data.table(segID=segID, uniqueID=uniqueID, xcen=xcen, ycen=ycen, xmax=xmax, ymax=ymax, RAcen=RAcen, Deccen=Deccen, RAmax=RAmax, Decmax=Decmax, sep=sep, flux=fluxout$flux, mag=mag, cenfrac=fluxout$cenfrac, N50=fluxout$N50seg, N90=fluxout$N90seg, N100=fluxout$N100seg, R50=R50seg, R90=R90seg, R100=R100seg, SB_N50=SB_N50, SB_N90=SB_N90, SB_N100=SB_N100, xsd=xsd, ysd=ysd, covxy=covxy, corxy=corxy, con=con, asymm=asymm, flux_reflect=flux_reflect, mag_reflect=mag_reflect, semimaj=rad$hi, semimin=rad$lo, axrat=axrat, ang=ang, signif=signif, FPlim=FPlim, flux_err=flux_err, mag_err=mag_err, flux_err_sky=flux_err_sky, flux_err_skyRMS=flux_err_skyRMS, flux_err_shot=flux_err_shot, sky_mean=sky_mean, sky_sum=sky_mean*fluxout$N100seg, skyRMS_mean=skyRMS_mean, Nedge=Nedge, Nsky=Nsky, Nobject=Nobject, Nborder=Nborder, Nmask=Nmask, edge_frac=edge_frac, edge_excess=edge_excess, flag_border=flag_border)
   return=as.data.frame(segstats[order(segstats[[sortcol]], decreasing=decreasing),])
 }
@@ -869,13 +922,15 @@ profoundSegimPlot=function(image, segim, mask, sky=0, header, col=rainbow(max(se
   
   image=image-sky
   
+  segim[is.na(segim)]=0L
+  
   if(missing(header)){header=NULL}
   if(is.null(header)){
     temp=magimage(image, ...)
   }else{
     temp=magimageWCS(image, header=header, ...)
   }
-  if(min(segim,na.rm=FALSE)!=0){segim=segim-min(segim,na.rm=FALSE)}
+  if(min(segim,na.rm=TRUE)!=0){segim=segim-min(segim,na.rm=TRUE)}
   segvec=which(tabulate(segim)>0)
   for(i in segvec){
     z=segim==i
@@ -884,7 +939,7 @@ profoundSegimPlot=function(image, segim, mask, sky=0, header, col=rainbow(max(se
   }
   if(!missing(mask)){
     if(!is.null(mask)){
-      magimage(mask, locut=0, hicut=1, col=c(NA,hsv(alpha=0.3)), add=T)
+      magimage(mask, locut=0, hicut=1, col=c(NA,hsv(alpha=0.2)), add=TRUE)
     }
   }
 }
@@ -933,7 +988,7 @@ profoundSegimGroup=function(segim){
     stop('The EBImage package is needed for this function to work. Please install it from Bioconductor.', call. = FALSE)
   }
   
-  Ngroup=NULL; segID=NULL
+  Ngroup=NULL; segID=NULL; Npix=NULL
   
   groupim=EBImage::bwlabel(segim)
   segimDT=data.table(segID=as.integer(segim), groupID=as.integer(groupim))
@@ -944,10 +999,15 @@ profoundSegimGroup=function(segim){
   groupim[groupim>0]=remap[segimDT[groupID>0,groupID]]
   
   segimDT=data.table(segID=as.integer(segim), groupID=as.integer(groupim))
-  groupID=segimDT[groupID>0,.BY,by=groupID]$groupID
+  #groups=segimDT[groupID>0,.N,by=groupID]
+  #groupID=groups$groupID
   groupsegID=segimDT[groupID>0,list(segID=list(sort(unique(segID)))),by=groupID]
-  groupsegID[,Ngroup:=length(unlist(segID)),by=groupID]
   setkey(groupsegID,groupID)
+  groupsegID=groupsegID[groupID %in% which(tabulate(unlist(groupsegID$segID))==1),]
+  groupsegID[,Ngroup:=length(unlist(segID)),by=groupID]
+  groups=groupsegID[groupID>0,.N,by=groupID]
+  groupsegID[,Npix:=groups$N]
+  groupim[!groupim %in% groupsegID$groupID]=0
   return=list(groupim=groupim, groupsegID=as.data.frame(groupsegID))
 }
 
@@ -971,4 +1031,8 @@ profoundSegimMerge=function(image, segim_base, segim_add, mask, sky=0){
   segim_merge[segim_add>0]=segim_add[segim_add>0]
   
   return=segim_merge
+}
+
+profoundSegimWarp=function(segim_in, header_in, header_out){
+  return=magwarp(image_in = segim_in, header_out = header_out, header_in = header_in, doscale = FALSE, interpolation = 'nearest')$image
 }

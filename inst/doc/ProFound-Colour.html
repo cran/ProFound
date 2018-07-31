@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Aaron Robotham" />
+
+<meta name="date" content="2018-07-31" />
+
+<title>ProFound: Colour me happy</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">ProFound: Colour me happy</h1>
+<h4 class="author"><em>Aaron Robotham</em></h4>
+<h4 class="date"><em>2018-07-31</em></h4>
+
+
+
+<p>Get the latest version of <strong>ProFound</strong> and <strong>ProFit</strong>:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(devtools)
+<span class="kw">install_github</span>(<span class="st">'asgr/ProFound'</span>)
+<span class="kw">install_github</span>(<span class="st">'ICRAR/ProFit'</span>)</code></pre></div>
+<p>Set global evaluate (basically TRUE for GitHub version and FALSE for CRAN):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">evalglobal=<span class="ot">FALSE</span></code></pre></div>
+<p>First load the libraries we need:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ProFound)</code></pre></div>
+<pre><code>## Loading required package: FITSio</code></pre>
+<pre><code>## Loading required package: magicaxis</code></pre>
+<p>One of the big design considerations when developing <strong>ProFound</strong> was to make colour photometry easy and flexible. This vignette will discuss a couple of ways to tackle it.</p>
+<p>First we need some images to do colour photometry on (these are taken from the <strong>ProFound</strong> Robotham et al 2018 paper):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">VISTA_K=<span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'VISTA_K.fits'</span>, <span class="dt">package=</span><span class="st">&quot;magicaxis&quot;</span>))
+VST_r=<span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'VST_r.fits'</span>, <span class="dt">package=</span><span class="st">&quot;magicaxis&quot;</span>))
+GALEX_NUV=<span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'GALEX_NUV.fits'</span>, <span class="dt">package=</span><span class="st">&quot;magicaxis&quot;</span>))</code></pre></div>
+<p>Let’s take a look at the images.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magimageWCS</span>(VISTA_K)
+<span class="kw">magimageWCS</span>(VST_r)
+<span class="kw">magimageWCS</span>(GALEX_NUV)</code></pre></div>
+<p>It is clear they are pretty well world coordinate system (WCS) aligned, but have very different pixel scales. This creates challenges for decent colour photometry, but there are a few ways to tackle it with the tools in <strong>ProFound</strong>.</p>
+<p>First let’s run ProFound in default blind mode on each image and just match the nearby segments (this is the worst approach!)</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_K=<span class="kw">profoundProFound</span>(VISTA_K, <span class="dt">magzero=</span><span class="dv">30</span>)
+pro_r=<span class="kw">profoundProFound</span>(VST_r, <span class="dt">magzero=</span><span class="dv">0</span>)
+pro_NUV=<span class="kw">profoundProFound</span>(GALEX_NUV, <span class="dt">magzero=</span><span class="fl">20.08</span>) <span class="co">#Ugly zero point I know- see Driver et al 2016 Table 3!</span></code></pre></div>
+<p><strong>ProFound</strong> has some useful class specific diagnostic plots:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(pro_K)
+<span class="kw">plot</span>(pro_r)
+<span class="kw">plot</span>(pro_NUV)</code></pre></div>
+<p>Do not worry too much about the differnce in the source finding, the point really is doing a catalogue match would return weird results for the bright central galaxy because there are such different blind photometry solutions. So we need to enforce some restrictions to get better colour photometry.</p>
+<div id="image-pixel-warping" class="section level2">
+<h2>Image Pixel Warping</h2>
+<p>One route is to warp the images onto a common WCS scheme and run <strong>ProFound</strong> in either full segment or bright segment mode. Here we will take the VIKING K-band as our target WCS image.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">VST_r_warpK=<span class="kw">magwarp</span>(VST_r, <span class="dt">header_out=</span>VISTA_K<span class="op">$</span>hdr)
+GALEX_NUV_warpK=<span class="kw">magwarp</span>(GALEX_NUV, <span class="dt">header_out=</span>VISTA_K<span class="op">$</span>hdr)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magimageWCS</span>(VISTA_K)
+<span class="kw">magimageWCS</span>(VST_r_warpK)
+<span class="kw">magimageWCS</span>(GALEX_NUV_warpK)</code></pre></div>
+<p>The images are now interpolated onto a common WCS, where their surface brightness is properly maintained (so we do not gain or lose flux). The small differences below are because the original images did not precisely cover the K-band image WCS.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sum</span>(VST_r<span class="op">$</span>imDat)
+<span class="kw">sum</span>(VST_r_warpK<span class="op">$</span>image)
+
+<span class="kw">sum</span>(GALEX_NUV<span class="op">$</span>imDat)
+<span class="kw">sum</span>(GALEX_NUV_warpK<span class="op">$</span>image)</code></pre></div>
+<p>We can now easily run <strong>ProFound</strong> in matched segment mode, turning the dilation iterations off:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_r_warpK=<span class="kw">profoundProFound</span>(VST_r_warpK, <span class="dt">segim=</span>pro_K<span class="op">$</span>segim, <span class="dt">magzero=</span><span class="dv">0</span>, <span class="dt">iters=</span><span class="dv">0</span>)
+pro_NUV_warpK=<span class="kw">profoundProFound</span>(GALEX_NUV_warpK, <span class="dt">segim=</span>pro_K<span class="op">$</span>segim, <span class="dt">magzero=</span><span class="fl">20.08</span>, <span class="dt">iters=</span><span class="dv">0</span>)</code></pre></div>
+<p>And now check the diagnostics:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(pro_K)
+<span class="kw">plot</span>(pro_r_warpK)
+<span class="kw">plot</span>(pro_NUV_warpK)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(pro_NUV_warpK<span class="op">$</span>segstats<span class="op">$</span>mag<span class="op">-</span>pro_K<span class="op">$</span>segstats<span class="op">$</span>mag, pro_r_warpK<span class="op">$</span>segstats<span class="op">$</span>mag<span class="op">-</span>pro_K<span class="op">$</span>segstats<span class="op">$</span>mag, <span class="dt">xlab=</span><span class="st">'NUV-K'</span>, <span class="dt">ylab=</span><span class="st">'r-K'</span>)</code></pre></div>
+<p>We can achieve the above in a simple way using the <strong>profoundMultiBand</strong> function, just setting iters_tot=0. This automates many of the fiddly steps and allows for multi band stacking (if desired):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multi=<span class="kw">profoundMultiBand</span>(<span class="dt">inputlist=</span><span class="kw">list</span>(GALEX_NUV_warpK, VST_r_warpK, VISTA_K), <span class="dt">magzero=</span><span class="kw">c</span>(<span class="fl">20.08</span>,<span class="dv">0</span>,<span class="dv">30</span>), <span class="dt">iters_tot=</span><span class="dv">0</span>, <span class="dt">detectbands=</span><span class="st">'K'</span>, <span class="dt">multibands=</span><span class="kw">c</span>(<span class="st">'NUV'</span>,<span class="st">'r'</span>,<span class="st">'K'</span>))</code></pre></div>
+<p>And we can check they really do compute the same results:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(pro_NUV_warpK<span class="op">$</span>segstats<span class="op">$</span>mag, multi<span class="op">$</span>cat_tot<span class="op">$</span>mag_NUVt, <span class="dt">grid=</span><span class="ot">TRUE</span>)</code></pre></div>
+</div>
+<div id="segmentation-map-warping" class="section level2">
+<h2>Segmentation Map Warping</h2>
+<p>The alternative approach is to leave the pixels be, but warp the segmentation map itself to fit a target WCS. Handily there is a function to do exactly this!</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_r=<span class="kw">profoundSegimWarp</span>(<span class="dt">segim_in=</span>pro_K<span class="op">$</span>segim, <span class="dt">header_in=</span>VISTA_K<span class="op">$</span>hdr, <span class="dt">header_out=</span>VST_r<span class="op">$</span>hdr)
+segim_NUV=<span class="kw">profoundSegimWarp</span>(<span class="dt">segim_in=</span>pro_K<span class="op">$</span>segim, <span class="dt">header_in=</span>VISTA_K<span class="op">$</span>hdr, <span class="dt">header_out=</span>GALEX_NUV<span class="op">$</span>hdr)</code></pre></div>
+<p>We can now run <strong>ProFound</strong> with a warped segmentation map:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_r_warpK2=<span class="kw">profoundProFound</span>(VST_r, <span class="dt">segim=</span>segim_r, <span class="dt">magzero=</span><span class="dv">0</span>, <span class="dt">iters=</span><span class="dv">0</span>)
+pro_NUV_warpK2=<span class="kw">profoundProFound</span>(GALEX_NUV, <span class="dt">segim=</span>segim_NUV, <span class="dt">magzero=</span><span class="fl">20.08</span>, <span class="dt">iters=</span><span class="dv">0</span>)</code></pre></div>
+<p>And now check the diagnostics:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(pro_K)
+<span class="kw">plot</span>(pro_r_warpK2)
+<span class="kw">plot</span>(pro_NUV_warpK2)</code></pre></div>
+<p>Note we cannot now guarantee that we have exactly the same number of segments since some small ones might not even cover a single pixel. This means we need to match back by segID.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(pro_r_warpK<span class="op">$</span>segstats<span class="op">$</span>mag[<span class="kw">match</span>(pro_r_warpK2<span class="op">$</span>segstats<span class="op">$</span>segID,pro_r_warpK<span class="op">$</span>segstats<span class="op">$</span>segID)], pro_r_warpK2<span class="op">$</span>segstats<span class="op">$</span>mag, <span class="dt">grid=</span><span class="ot">TRUE</span>, <span class="dt">xlab=</span><span class="st">'r Image Warp / mag'</span>, <span class="dt">ylab=</span><span class="st">'r Segim Warp / mag'</span>)
+<span class="kw">magplot</span>(pro_NUV_warpK<span class="op">$</span>segstats<span class="op">$</span>mag[<span class="kw">match</span>(pro_NUV_warpK2<span class="op">$</span>segstats<span class="op">$</span>segID,pro_NUV_warpK<span class="op">$</span>segstats<span class="op">$</span>segID)], pro_NUV_warpK2<span class="op">$</span>segstats<span class="op">$</span>mag, <span class="dt">grid=</span><span class="ot">TRUE</span>, <span class="dt">xlab=</span><span class="st">'NUV Image Warp / mag'</span>, <span class="dt">ylab=</span><span class="st">'NUV Segim Warp / mag'</span>)</code></pre></div>
+</div>
+<div id="better-colours" class="section level2">
+<h2>Better colours</h2>
+<p>You might want to allow some degree of segmentation map growth (set iters&gt;0) for you target photometry. This is particularly true when the target band PSF is broader than the detection band. Also, you might do better using the brighter part of the segmentation map returned by <strong>ProFound</strong>, i.e. pass segim_orig rather than segim. In this case you will need to adjust your magnitudes for the detection band by the segstat$origfrac value, which gives the flux fraction in the original segment compared to the final one returned. I.e. something like profound$segstat$mag - 2.5*log10(profound$segstat$origfrac).</p>
+<p>As you can see, there is a lot of flexibility to how colours can be computed- either in a very static forced mode (as above), or more dynamically to better adapt to the different characteristics of the target band data. This approached has been used to good effect on UV-radio data, so success should be possible with a bit of care and thought.</p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

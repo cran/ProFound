@@ -38,6 +38,7 @@ The data.frame returned by \option{groupsegID} is a slightly unusal structure to
   \item{groupID}{Group ID, which can be matched against values in \option{groupim}}
   \item{segID}{An embedded list of segmentation IDs for segments in the group. I.e. each list element of \option{segID} is a vector (see Examples for clarity).}
   \item{Ngroup}{The total number of segments that are in the group.}
+  \item{Npix}{The total number of pixels that are in the group.}
 }
 \author{
 Aaron Robotham
@@ -47,6 +48,7 @@ Aaron Robotham
 \code{\link{profoundSegimNear}}, ~~~
 }
 \examples{
+\dontrun{
 image=readFITS(system.file("extdata", 'VIKING/mystery_VIKING_Z.fits', package="ProFound"))
 profound=profoundProFound(image, skycut=1.5, magzero=30, verbose=TRUE)
 
@@ -66,6 +68,7 @@ unlist(group$groupsegID[1,2])
 
 profoundSegimPlot(image$imDat, profound$segim)
 magimage(group$groupim==1, col=c(NA,'red'), add=TRUE)
+}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

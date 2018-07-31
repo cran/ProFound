@@ -32,7 +32,7 @@
   return=tempout
 }
 
-profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, tolerance=4, ext=2, sigma=1, smooth=TRUE, SBlim, size=5, shape='disc', iters=6, threshold=1.05, converge='flux', magzero=0, gain=NULL, pixscale=1, sky, skyRMS, redosky=TRUE, redoskysize=21, box=c(100,100), grid=box, type='bilinear', skytype='median', skyRMStype='quanlo', sigmasel=1, doclip=TRUE, shiftloc = FALSE, paddim = TRUE, header, verbose=FALSE, plot=FALSE, stats=TRUE, rotstats=FALSE, boundstats=FALSE, nearstats=boundstats, groupstats=boundstats, offset=1, sortcol="segID", decreasing=FALSE, lowmemory=FALSE, keepim=TRUE, ...){
+profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, tolerance=4, ext=2, sigma=1, smooth=TRUE, SBlim, size=5, shape='disc', iters=6, threshold=1.05, converge='flux', magzero=0, gain=NULL, pixscale=1, sky, skyRMS, redosky=TRUE, redoskysize=21, box=c(100,100), grid=box, type='bilinear', skytype='median', skyRMStype='quanlo', sigmasel=1, doclip=TRUE, shiftloc = FALSE, paddim = TRUE, header, verbose=FALSE, plot=FALSE, stats=TRUE, rotstats=FALSE, boundstats=FALSE, nearstats=boundstats, groupstats=boundstats, offset=1, haralickstats=FALSE, sortcol="segID", decreasing=FALSE, lowmemory=FALSE, keepim=TRUE, R50clean=0, ...){
   if(verbose){message('Running ProFound:')}
   timestart=proc.time()[3]
   call=match.call()
@@ -73,26 +73,55 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
   #Treat image NAs as masked regions:
   
   if(!missing(mask)){
-    mask[is.na(image)]=1
+    if(length(mask)==1){
+      maskflag=mask
+      mask=matrix(0L,dim(image)[1],dim(image)[2])
+      mask[image==maskflag]=1L
+      
+    }
+    if(anyNA(image)){
+      badpix=is.na(image)
+      mask[badpix]=1L
+      image[badpix]=0
+      if(rembig){
+        rm(badpix)
+        gc()
+      }
+    }
   }else{
-    if(any(is.na(image))){
+    if(anyNA(image)){
       mask=matrix(0,dim(image)[1],dim(image)[2])
-      mask[is.na(image)]=1
+      badpix=is.na(image)
+      mask[badpix]=1L
+      image[badpix]=0
+      if(rembig){
+        rm(badpix)
+        gc()
+      }
     }
   }
+  
+  #if(!missing(segim) & !missing(mask)){
+  #  segim=segim*(1-mask) #I don't think we actually need this
+  #}
   
   #Get the pixel scale, if possible and not provided:
   
   if(missing(pixscale) & !missing(header)){
-    pixscale=profoundGetPixScale(header)
+    pixscale=getpixscale(header)
     if(verbose){message(paste('Extracted pixel scale from header provided:',round(pixscale,3),'asec/pixel'))}
-    if(verbose){message(paste('Supplied image is',round(dim(image)[1]*pixscale/60,3),'x',round(dim(image)[2]*pixscale/60,3),'amin, ', round(prod(dim(image))*pixscale^2/(3600^2),3),'deg-sq'))}
+  }else{
+    if(verbose){message(paste('Using suggested pixel scale:',round(pixscale,3),'asec/pixel'))}
   }
+  
+  skyarea=prod(dim(image))*pixscale^2/(3600^2)
+  if(verbose){message(paste('Supplied image is',round(dim(image)[1]*pixscale/60,3),'x',round(dim(image)[2]*pixscale/60,3),'amin, ', round(skyarea,3),'deg-sq'))}
   
   if(missing(objects)){
     if(!missing(segim)){
       objects=segim
       objects[objects != 0] = 1
+      mode(objects)='integer'
     }
   }
   
@@ -129,8 +158,6 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
     if(verbose){message("Skipping making an initial segmentation image - User provided segim")}
   }
   
-  segim_orig=segim
-  
   if(any(segim>0)){
     if((hassky==FALSE | hasskyRMS==FALSE) & iters>0){
       if(verbose){message(paste('Doing initial aggressive dilation -',round(proc.time()[3]-timestart,3),'sec'))}
@@ -153,10 +180,19 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
     
     if(iters>0){
       if(verbose){message(paste('Calculating initial segstats -',round(proc.time()[3]-timestart,3),'sec'))}
-      segstats=profoundSegimStats(image=image, segim=segim, mask=mask, sky=sky)
+      segstats=profoundSegimStats(image=image, segim=segim, mask=mask, sky=sky, pixscale=pixscale)
+      
+      if(R50clean[1]!=0){
+        badseg=segstats$R50<=R50clean
+        segim[segim %in% segstats[badseg,'segID']]=0
+        segstats=segstats[which(!badseg),]
+      }
+      
       compmat=cbind(segstats[,converge])
-      segim_array=array(0, dim=c(dim(segim),iters+1))
+      segim_array=array(0L, dim=c(dim(segim),iters+1))
       segim_array[,,1]=segim
+      
+      segim_orig=segim
       
       if(verbose){message('Doing dilations:')}
       
@@ -173,12 +209,16 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       selseg=.selectCoG(diffmat, threshold)
       
       segim=segim$segim
-      segim[]=0
+      segim[]=0L
       
       if(verbose){message(paste('Constructing final segim -',round(proc.time()[3]-timestart,3),'sec'))}
       for(i in 1:(iters+1)){
         select=segim_array[,,i] %in% segstats[selseg==i,'segID']
         segim[select]=segim_array[,,i][select]
+      }
+      
+      if(!missing(mask)){
+        segim[mask!=0]=segim_orig[mask!=0]
       }
       
       if(rembig){
@@ -190,12 +230,14 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       origfrac=compmat[,1]/compmat[cbind(1:length(selseg),selseg)]
       
       objects=segim
-      objects[objects!=0]=1
+      objects[objects!=0]=1L
+      mode(objects)='integer'
       
       selseg=selseg-1
       
     }else{
       if(verbose){message('Iters set to 0 - keeping segim un-dilated')}
+      segim_orig=segim
       selseg=0
       origfrac=1
     }
@@ -216,6 +258,8 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       if(verbose){message("Skipping making final sky map - redosky set to FALSE")}
       objects_redo=NULL
     }
+    
+    Norig=tabulate(segim_orig)
     
     if(lowmemory){
       image=image-sky
@@ -241,7 +285,7 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
       if(verbose){message(paste(' - rotstats =', rotstats))}
       if(verbose){message(paste(' - boundstats =', boundstats))}
       segstats=profoundSegimStats(image=image, segim=segim, mask=mask, sky=sky, skyRMS=skyRMS, magzero=magzero, gain=gain, pixscale=pixscale, header=header, sortcol=sortcol, decreasing=decreasing, rotstats=rotstats, boundstats=boundstats, offset=offset)
-      segstats=cbind(segstats, iter=selseg, origfrac=origfrac)
+      segstats=cbind(segstats, iter=selseg, origfrac=origfrac, Norig=Norig[segstats$segID])
       segstats=cbind(segstats, flag_keep=segstats$origfrac>= median(segstats$origfrac[segstats$iter==iters]) | segstats$iter<iters)
     }else{
       if(verbose){message("Skipping segmentation statistics - segstats set to FALSE")}
@@ -256,13 +300,39 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
     
     if(groupstats){
       group=profoundSegimGroup(segim=segim)
+      if(stats & !missing(image)){
+        groupstats=profoundSegimStats(image=image, segim=group$groupim, mask=mask, sky=sky, skyRMS=skyRMS, magzero=magzero, gain=gain, pixscale=pixscale, header=header, sortcol=sortcol, decreasing=decreasing, rotstats=rotstats, boundstats=boundstats, offset=offset)
+        colnames(groupstats)[1]='groupID'
+      }else{
+        groupstats=NULL
+      }
     }else{
       group=NULL
+      groupstats=NULL
+    }
+    
+    if(haralickstats){
+      if(requireNamespace("EBImage", quietly = TRUE)){
+        scale=10^(0.4*(30-magzero))
+        haralick=as.data.frame(EBImage::computeFeatures.haralick(segim,(image-sky)*scale))
+        haralick=haralick[segstats$segID,]
+      }else{
+        if(verbose){
+          message('The EBImage package is needed to compute Haralick statistics.')
+          haralick=NULL
+        }
+      }
+    }else{
+      haralick=NULL
     }
     
     if(plot){
       if(verbose){message(paste('Plotting segments -',round(proc.time()[3]-timestart,3),'sec'))}
-      profoundSegimPlot(image=image, segim=segim, mask=mask, sky=sky, header=header, ...)
+      if(any(is.finite(sky))){
+        profoundSegimPlot(image=image-sky, segim=segim, mask=mask, header=header, ...)
+      }else{
+        profoundSegimPlot(image=image, segim=segim, mask=mask, header=header, ...)
+      }
     }else{
       if(verbose){message("Skipping segmentation plot - plot set to FALSE")}
     }
@@ -281,48 +351,87 @@ profoundProFound=function(image, segim, objects, mask, skycut=1, pixcut=3, toler
     if(keepim==FALSE){image=NULL; mask=NULL}
     if(missing(mask)){mask=NULL}
     if(verbose){message(paste('ProFound is finished! -',round(proc.time()[3]-timestart,3),'sec'))}
-    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=objects_redo, sky=sky, skyRMS=skyRMS, image=image, mask=mask, segstats=segstats, Nseg=dim(segstats)[1], near=near, group=group, header=header, SBlim=SBlim, magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
+    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=objects_redo, sky=sky, skyRMS=skyRMS, image=image, mask=mask, segstats=segstats, Nseg=dim(segstats)[1], near=near, group=group, groupstats=groupstats, haralick=haralick, header=header, SBlim=SBlim, magzero=magzero, dim=dim(segim), pixscale=pixscale, skyarea=skyarea, gain=gain, call=call, date=date(), time=proc.time()[3]-timestart, ProFound.version=packageVersion('ProFound'), R.version=R.version)
   }else{
     if(missing(header)){header=NULL}
     if(keepim==FALSE){image=NULL; mask=NULL}
     if(missing(mask)){mask=NULL}
     if(verbose){message('No objects in segmentation map - skipping dilations and CoG')}
     if(verbose){message(paste('ProFound is finished! -',round(proc.time()[3]-timestart,3),'sec'))}
-    output=list(segim=segim, segim_orig=segim_orig, objects=objects, objects_redo=segim, sky=sky, skyRMS=skyRMS, image=image, mask=mask, segstats=NULL, Nseg=0, near=NULL, group=NULL, header=header, SBlim=NULL,  magzero=magzero, dim=dim(segim), pixscale=pixscale, gain=gain, call=call)
+    output=list(segim=NULL, segim_orig=NULL, objects=NULL, objects_redo=NULL, sky=NULL, skyRMS=NULL, image=image, mask=mask, segstats=NULL, Nseg=0, near=NULL, group=NULL, groupstats=NULL, haralick=NULL, header=header, SBlim=NULL,  magzero=magzero, dim=dim(segim), pixscale=pixscale, skyarea=skyarea, gain=gain, call=call, date=date(), time=proc.time()[3]-timestart, ProFound.version=packageVersion('ProFound'), R.version=R.version)
   }
   class(output)='profound'
   return=output
 }
 
-plot.profound=function(x, ...){
+plot.profound=function(x, logR50=TRUE, dmag=0.5, ...){
+  
+  if(class(x)!='profound'){
+    stop('Object class is not of type profound!')
+  }
   
   if(is.null(x$image)){
     stop('Missing image!')
   }
+  
+  if(is.null(x$segim)){
+    stop('Missing segmentation map!')
+  }
+  
+  if(is.null(x$sky)){
+    x$sky=matrix(0, x$dim[1], x$dim[2])
+  }
+  if(length(x$sky)==1){
+    x$sky=matrix(x$sky, x$dim[1], x$dim[2])
+  }
+  
+  if(is.null(x$skyRMS)){
+    x$skyRMS=matrix(1, x$dim[1], x$dim[2])
+  }
+  if(length(x$skyRMS)==1){
+    x$skyRMS=matrix(x$skyRMS, x$dim[1], x$dim[2])
+  }
+  
+  segdiff=x$segim-x$segim_orig
+  segdiff[segdiff<0]=0
+  
+  image=x$image-x$sky
+  cmap = rev(colorRampPalette(brewer.pal(9,'RdYlBu'))(100))
+  maximg = quantile(abs(image), 0.995, na.rm=TRUE)
+  stretchscale = 1/median(abs(image[which(image>0)]), na.rm=TRUE)
   
   layout(matrix(1:9, 3, byrow=TRUE))
   
   if(!is.null(x$header)){
   
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimageWCS(x$image, x$header)
+    magimageWCS(image, x$header, stretchscale=stretchscale, locut=-maximg, hicut=maximg, type='num', zlim=c(0,1), col=cmap)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(v=0,alpha=0.2)), add=TRUE)}
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimageWCS(x$segim, x$header, col=c(NA, rainbow(1e4, end=2/3)))
+    magimageWCS(x$segim, x$header, col=c(NA, rainbow(max(x$segim,na.rm=TRUE), end=2/3)), magmap=FALSE)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(v=0,alpha=0.2)), add=TRUE)}
     abline(v=c(0,dim(x$image)[1]))
     abline(h=c(0,dim(x$image)[2]))
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimageWCS((x$image-x$sky)/x$skyRMS, x$header)
-    magimage(x$segim-x$segim_orig, col=c(NA, rainbow(1e4, end=2/3)), add=TRUE)
+    magimageWCS(image/x$skyRMS, x$header)
+    magimage(segdiff, col=c(NA, rainbow(max(x$segim,na.rm=TRUE), end=2/3)), magmap=FALSE, add=TRUE)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(alpha=0.2)), add=TRUE)}
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    area=prod(x$dim)*x$pixscale^2/(3600^2)
-    temphist=maghist(x$segstats$mag, log='y', scale=2/area, breaks=seq(floor(min(x$segstats$mag, na.rm = TRUE)), ceiling(max(x$segstats$mag, na.rm = TRUE)),by=0.5), xlab='mag', ylab=expression('#'/'deg-sq'/'dmag'), grid=TRUE)
+    if(is.null(x$skyarea)){
+      skyarea=prod(x$dim)*x$pixscale^2/(3600^2)
+    }else{
+      skyarea=x$skyarea
+    }
+    temphist=maghist(x$segstats$mag, log='y', scale=(2*dmag)/x$skyarea, breaks=seq(floor(min(x$segstats$mag, na.rm = TRUE)), ceiling(max(x$segstats$mag, na.rm = TRUE)),by=0.5), xlab='mag', ylab=paste('#/deg-sq/d',dmag,'mag',sep=''), grid=TRUE)
     #magplot(temphist, log='y', xlab='mag', ylab=expression('#'/'deg-sq'/'dmag'), grid=TRUE)
     ymax=log10(max(temphist$counts,na.rm = T))
     xmax=temphist$mids[which.max(temphist$counts)]
     abline(ymax - xmax*0.6, 0.6, col='red')
+    abline(v=xmax+0.25, col='red')
+    axis(side=1, at=xmax+0.25, labels=xmax+0.25, tick=FALSE, line=-1, col.axis='red')
       
     par(mar=c(3.5,3.5,0.5,0.5))
     magimageWCS(x$sky, x$header)
@@ -335,7 +444,11 @@ plot.profound=function(x, ...){
     maghist(x$segstats$iter, breaks=seq(-0.5,max(x$segstats$iter, na.rm=TRUE)+0.5,by=1), majorn=max(x$segstats$iter, na.rm=TRUE)+1, xlab='Number of Dilations', ylab='#')
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE)
+    if(logR50){
+      magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(min(x$segstats$R50, 0.1, na.rm = TRUE), max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE, log='y')
+    }else{
+      magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE)
+    }
     
     par(mar=c(3.5,3.5,0.5,0.5))
     fluxrat=x$segstats$flux/x$segstats$flux_err
@@ -344,22 +457,27 @@ plot.profound=function(x, ...){
   }else{
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimage(x$image)
+    magimage(image, stretchscale=stretchscale, locut=-maximg, hicut=maximg, type='num', zlim=c(0,1), col=cmap)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(v=0,alpha=0.2)), add=TRUE)}
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimage(x$segim, col=c(NA, rainbow(1e4, end=2/3)))
-    abline(v=c(0,dim(x$image)[1]))
-    abline(h=c(0,dim(x$image)[2]))
+    magimage(x$segim, col=c(NA, rainbow(max(x$segim,na.rm=TRUE), end=2/3)), magmap=FALSE)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(v=0,alpha=0.2)), add=TRUE)}
+    abline(v=c(0,dim(image)[1]))
+    abline(h=c(0,dim(image)[2]))
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magimage((x$image-x$sky)/x$skyRMS)
-    magimage(x$segim-x$segim_orig, col=c(NA, rainbow(1e4, end=2/3)), add=TRUE)
-    
+    magimage(image/x$skyRMS)
+    magimage(segdiff, col=c(NA, rainbow(max(x$segim,na.rm=TRUE), end=2/3)), magmap=FALSE, add=TRUE)
+    if(!is.null(x$mask)){magimage(x$mask, locut=0, hicut=1, col=c(NA,hsv(alpha=0.2)), add=TRUE)}
+
     par(mar=c(3.5,3.5,0.5,0.5))
-    temphist=maghist(x$segstats$mag, log='y', xlab='mag', ylab='#', grid=TRUE)
+    temphist=maghist(x$segstats$mag, log='y', scale=(2*dmag), xlab='mag', ylab=paste('#/d',dmag,'mag',sep=''), grid=TRUE)
     ymax=log10(max(temphist$counts,na.rm = T))
     xmax=temphist$mids[which.max(temphist$counts)]
     abline(ymax - xmax*0.6, 0.6, col='red')
+    abline(v=xmax+0.25, col='red')
+    axis(side=1, at=xmax+0.25, labels=xmax+0.25, tick=FALSE, line=-1, col.axis='red')
     
     par(mar=c(3.5,3.5,0.5,0.5))
     magimage(x$sky)
@@ -372,7 +490,11 @@ plot.profound=function(x, ...){
     maghist(x$segstats$iter, breaks=seq(-0.5,max(x$segstats$iter, na.rm=TRUE)+0.5,by=1), majorn=max(x$segstats$iter, na.rm=TRUE)+1, xlab='Number of Dilations', ylab='#')
     
     par(mar=c(3.5,3.5,0.5,0.5))
-    magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / Pixels', grid=TRUE)
+    if(logR50){
+      magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(min(x$segstats$R50, 0.1, na.rm = TRUE), max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE, log='y')
+    }else{
+      magplot(x$segstats$mag, x$segstats$R50, pch='.', col=hsv(alpha=0.5), ylim=c(0, max(x$segstats$R50, 1, na.rm = TRUE)), cex=3, xlab='mag', ylab='R50 / asec', grid=TRUE)
+    }
     
     par(mar=c(3.5,3.5,0.5,0.5))
     fluxrat=x$segstats$flux/x$segstats$flux_err

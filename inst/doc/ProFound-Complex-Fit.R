@@ -3,25 +3,28 @@
 #  install_github('asgr/ProFound')
 #  install_github('ICRAR/ProFit')
 
-## ---- eval=FALSE---------------------------------------------------------
+## ------------------------------------------------------------------------
+evalglobal=FALSE
+
+## ---- eval=evalglobal----------------------------------------------------
 #  library(ProFound)
 #  library(ProFit)
 
-## ---- eval=FALSE, fig.width=5, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=5, fig.height=5, dpi=40-----------------
 #  image=readFITS(system.file("extdata", 'VIKING/mystery_VIKING_Z.fits', package="ProFound"))
 #  profound=profoundProFound(image, magzero=30, verbose=TRUE, plot=TRUE, boundstats=TRUE, rotstats=TRUE)
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  profound$group$groupsegID[1,]
 
-## ---- eval=FALSE, fig.width=5, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=5, fig.height=5, dpi=40-----------------
 #  magimage(profound$group$groupim==1)
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  group1segstats=profound$segstats[profound$segstats$segID %in% unlist(profound$group$groupsegID[1,"segID"]),]
 #  group1segstats
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  psf_modellist=list(
 #    moffat=list(
 #      xcen=75/2,
@@ -36,14 +39,14 @@
 #  )
 #  psf_model=profitMakeModel(modellist=psf_modellist, dim=c(75,75))$z
 
-## ---- eval=FALSE, fig.width=5, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=5, fig.height=5, dpi=40-----------------
 #  maghist(profound$segstats$R50*2/0.339,breaks=20)
 #  abline(v=4.47, lty=2)
 
-## ---- eval=FALSE, fig.width=5, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=5, fig.height=5, dpi=40-----------------
 #  magimage(psf_model)
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  group1_modellist=list(
 #    pointsource=list(
 #      xcen= group1segstats$xmax[1:3],
@@ -127,13 +130,13 @@
 #    )
 #  )
 
-## ---- eval=FALSE, fig.width=5, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=5, fig.height=5, dpi=40-----------------
 #  sigma=profoundMakeSigma(image$imDat, objects=profound$objects, gain=0.5, sky=profound$sky, skyRMS =profound$skyRMS, plot=TRUE)
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  group1_Data=profitSetupData(image$imDat-profound$sky, sigma=sigma, modellist=group1_modellist, tofit=group1_tofit, tolog=group1_tolog, intervals=group1_interval, magzero=30, algo.func='optim', psf=psf_model, region=matrix(profound$segim %in% unlist(profound$group$groupsegID[1,'segID'])[1:5], 356), verbose=FALSE)
 
-## ---- eval=FALSE, fig.width=8, fig.height=5, dpi=40----------------------
+## ---- eval=evalglobal, fig.width=8, fig.height=5, dpi=40-----------------
 #  profitLikeModel(parm=group1_Data$init, Data=group1_Data, makeplots=TRUE, plotchisq=TRUE)
 
 ## ---- echo=TRUE, message=FALSE, warning=FALSE, eval=FALSE----------------
@@ -142,7 +145,7 @@
 ## ---- fig.width=8, fig.height=5, eval=FALSE, dpi=40----------------------
 #  profitLikeModel(parm=group1_fit$par, Data=group1_Data, makeplots=TRUE, plotchisq=TRUE)
 
-## ---- eval=FALSE---------------------------------------------------------
+## ---- eval=evalglobal----------------------------------------------------
 #  group1_modellist_fit=profitRemakeModellist(parm=group1_fit$par, Data=group1_Data)$modellist
 #  group1_modellist_fit
 

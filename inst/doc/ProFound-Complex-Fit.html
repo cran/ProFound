@@ -12,7 +12,7 @@
 
 <meta name="author" content="Aaron Robotham" />
 
-<meta name="date" content="2018-03-02" />
+<meta name="date" content="2018-07-31" />
 
 <title>ProFound/ProFit: A Complex Fit</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">ProFound/ProFit: A Complex Fit</h1>
 <h4 class="author"><em>Aaron Robotham</em></h4>
-<h4 class="date"><em>2018-03-02</em></h4>
+<h4 class="date"><em>2018-07-31</em></h4>
 
 
 
@@ -78,23 +78,25 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(devtools)
 <span class="kw">install_github</span>(<span class="st">'asgr/ProFound'</span>)
 <span class="kw">install_github</span>(<span class="st">'ICRAR/ProFit'</span>)</code></pre></div>
+<p>Set global evaluate (basically TRUE for GitHub version and FALSE for CRAN):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">evalglobal=<span class="ot">FALSE</span></code></pre></div>
 <p>First load the libraries we need:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ProFound)
 <span class="kw">library</span>(ProFit)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">image=<span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'VIKING/mystery_VIKING_Z.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFound&quot;</span>))
 profound=<span class="kw">profoundProFound</span>(image, <span class="dt">magzero=</span><span class="dv">30</span>, <span class="dt">verbose=</span><span class="ot">TRUE</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>, <span class="dt">boundstats=</span><span class="ot">TRUE</span>, <span class="dt">rotstats=</span><span class="ot">TRUE</span>)</code></pre></div>
 <p>We can identify the large group of central potentially confused sources from the group output from <strong>ProFound</strong>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profound$group$groupsegID[<span class="dv">1</span>,]</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">profound<span class="op">$</span>group<span class="op">$</span>groupsegID[<span class="dv">1</span>,]</code></pre></div>
 <p>The main group has 8 segments, which we can view easily:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magimage</span>(profound$group$groupim==<span class="dv">1</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magimage</span>(profound<span class="op">$</span>group<span class="op">$</span>groupim<span class="op">==</span><span class="dv">1</span>)</code></pre></div>
 <p>We can check the properties of the group 1 segments too:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1segstats=profound$segstats[profound$segstats$segID %in%<span class="st"> </span><span class="kw">unlist</span>(profound$group$groupsegID[<span class="dv">1</span>,<span class="st">&quot;segID&quot;</span>]),]
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1segstats=profound<span class="op">$</span>segstats[profound<span class="op">$</span>segstats<span class="op">$</span>segID <span class="op">%in%</span><span class="st"> </span><span class="kw">unlist</span>(profound<span class="op">$</span>group<span class="op">$</span>groupsegID[<span class="dv">1</span>,<span class="st">&quot;segID&quot;</span>]),]
 group1segstats</code></pre></div>
 <p>In our Full Monty vignette example we detail how to extract a reasonable PSF. We use the solution here.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">psf_modellist=<span class="kw">list</span>(
   <span class="dt">moffat=</span><span class="kw">list</span>(
-    <span class="dt">xcen=</span><span class="dv">75</span>/<span class="dv">2</span>,
-    <span class="dt">ycen=</span><span class="dv">75</span>/<span class="dv">2</span>,
+    <span class="dt">xcen=</span><span class="dv">75</span><span class="op">/</span><span class="dv">2</span>,
+    <span class="dt">ycen=</span><span class="dv">75</span><span class="op">/</span><span class="dv">2</span>,
     <span class="dt">mag=</span><span class="dv">0</span>,
     <span class="dt">fwhm=</span><span class="fl">3.8</span>,
     <span class="dt">con=</span><span class="fl">2.04</span>,
@@ -103,58 +105,58 @@ group1segstats</code></pre></div>
     <span class="dt">box=</span><span class="dv">0</span>
   )
 )
-psf_model=<span class="kw">profitMakeModel</span>(<span class="dt">modellist=</span>psf_modellist, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">75</span>,<span class="dv">75</span>))$z</code></pre></div>
+psf_model=<span class="kw">profitMakeModel</span>(<span class="dt">modellist=</span>psf_modellist, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">75</span>,<span class="dv">75</span>))<span class="op">$</span>z</code></pre></div>
 <p>We can see where this FWHM lies in comparison to the values estimated from <strong>ProFound</strong>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">maghist</span>(profound$segstats$R50*<span class="dv">2</span>/<span class="fl">0.339</span>,<span class="dt">breaks=</span><span class="dv">20</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">maghist</span>(profound<span class="op">$</span>segstats<span class="op">$</span>R50<span class="op">*</span><span class="dv">2</span><span class="op">/</span><span class="fl">0.339</span>,<span class="dt">breaks=</span><span class="dv">20</span>)
 <span class="kw">abline</span>(<span class="dt">v=</span><span class="fl">4.47</span>, <span class="dt">lty=</span><span class="dv">2</span>)</code></pre></div>
 <p>Have a quick check:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magimage</span>(psf_model)</code></pre></div>
 <p>Let’s try fitting all the sources as Sersic profiles!</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_modellist=<span class="kw">list</span>(
   <span class="dt">pointsource=</span><span class="kw">list</span>(
-    <span class="dt">xcen=</span> group1segstats$xmax[<span class="dv">1</span>:<span class="dv">3</span>],
-    <span class="dt">ycen=</span> group1segstats$ymax[<span class="dv">1</span>:<span class="dv">3</span>],
-    <span class="dt">mag=</span> group1segstats$mag[<span class="dv">1</span>:<span class="dv">3</span>]
+    <span class="dt">xcen=</span> group1segstats<span class="op">$</span>xmax[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>],
+    <span class="dt">ycen=</span> group1segstats<span class="op">$</span>ymax[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>],
+    <span class="dt">mag=</span> group1segstats<span class="op">$</span>mag[<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>]
   ),
   <span class="dt">sersic=</span><span class="kw">list</span>(
-    <span class="dt">xcen=</span> group1segstats$xmax[<span class="dv">4</span>:<span class="dv">5</span>],
-    <span class="dt">ycen=</span> group1segstats$ymax[<span class="dv">4</span>:<span class="dv">5</span>],
-    <span class="dt">mag=</span> group1segstats$mag[<span class="dv">4</span>:<span class="dv">5</span>],
-    <span class="dt">re=</span> group1segstats$R50[<span class="dv">4</span>:<span class="dv">5</span>]/<span class="fl">0.339</span>,
+    <span class="dt">xcen=</span> group1segstats<span class="op">$</span>xmax[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>],
+    <span class="dt">ycen=</span> group1segstats<span class="op">$</span>ymax[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>],
+    <span class="dt">mag=</span> group1segstats<span class="op">$</span>mag[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>],
+    <span class="dt">re=</span> group1segstats<span class="op">$</span>R50[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>]<span class="op">/</span><span class="fl">0.339</span>,
     <span class="dt">nser=</span> <span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">2</span>),
-    <span class="dt">ang=</span> group1segstats$ang[<span class="dv">4</span>:<span class="dv">5</span>],
-    <span class="dt">axrat=</span> group1segstats$axrat[<span class="dv">4</span>:<span class="dv">5</span>],
+    <span class="dt">ang=</span> group1segstats<span class="op">$</span>ang[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>],
+    <span class="dt">axrat=</span> group1segstats<span class="op">$</span>axrat[<span class="dv">4</span><span class="op">:</span><span class="dv">5</span>],
     <span class="dt">box=</span> <span class="kw">rep</span>(<span class="dv">0</span>, <span class="dv">2</span>)
   )
 )
 
 group1_interval=<span class="kw">list</span>(
   <span class="dt">pointsource=</span><span class="kw">list</span>(
-    <span class="dt">xcen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">3</span>),
-    <span class="dt">ycen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">3</span>),
-    <span class="dt">mag=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">2</span>,<span class="dv">2</span>)),<span class="dv">3</span>)
+    <span class="dt">xcen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">3</span>),
+    <span class="dt">ycen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">3</span>),
+    <span class="dt">mag=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">2</span>,<span class="dv">2</span>)),<span class="dv">3</span>)
   ),
   <span class="dt">sersic=</span><span class="kw">list</span>(
-    <span class="dt">xcen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>),
-    <span class="dt">ycen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>),
-    <span class="dt">mag=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">2</span>,<span class="dv">2</span>)),<span class="dv">2</span>),
+    <span class="dt">xcen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>),
+    <span class="dt">ycen=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>),
+    <span class="dt">mag=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">2</span>,<span class="dv">2</span>)),<span class="dv">2</span>),
     <span class="dt">re=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="fl">0.5</span>,<span class="dv">2</span>)),<span class="dv">2</span>),
     <span class="dt">nser=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="fl">0.5</span>,<span class="dv">10</span>)),<span class="dv">2</span>),
-    <span class="dt">ang=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">180</span>,<span class="dv">360</span>)),<span class="dv">2</span>),
+    <span class="dt">ang=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">180</span>,<span class="dv">360</span>)),<span class="dv">2</span>),
     <span class="dt">axrat=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="fl">0.1</span>,<span class="dv">1</span>)),<span class="dv">2</span>),
-    <span class="dt">box=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>)
+    <span class="dt">box=</span> <span class="kw">rep</span>(<span class="kw">list</span>(<span class="kw">c</span>(<span class="op">-</span><span class="dv">1</span>,<span class="dv">1</span>)),<span class="dv">2</span>)
   )
 )
-for(i in <span class="dv">1</span>:<span class="dv">3</span>){
-  group1_interval$pointsource$xcen[[i]]=group1_modellist$pointsource$xcen[i]+group1_interval$pointsource$xcen[[i]]
-  group1_interval$pointsource$ycen[[i]]=group1_modellist$pointsource$ycen[i]+group1_interval$pointsource$ycen[[i]]
-  group1_interval$pointsource$mag[[i]]=group1_modellist$pointsource$mag[i]+group1_interval$pointsource$mag[[i]]
+<span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>){
+  group1_interval<span class="op">$</span>pointsource<span class="op">$</span>xcen[[i]]=group1_modellist<span class="op">$</span>pointsource<span class="op">$</span>xcen[i]<span class="op">+</span>group1_interval<span class="op">$</span>pointsource<span class="op">$</span>xcen[[i]]
+  group1_interval<span class="op">$</span>pointsource<span class="op">$</span>ycen[[i]]=group1_modellist<span class="op">$</span>pointsource<span class="op">$</span>ycen[i]<span class="op">+</span>group1_interval<span class="op">$</span>pointsource<span class="op">$</span>ycen[[i]]
+  group1_interval<span class="op">$</span>pointsource<span class="op">$</span>mag[[i]]=group1_modellist<span class="op">$</span>pointsource<span class="op">$</span>mag[i]<span class="op">+</span>group1_interval<span class="op">$</span>pointsource<span class="op">$</span>mag[[i]]
 }
-for(i in <span class="dv">1</span>:<span class="dv">2</span>){
-  group1_interval$sersic$xcen[[i]]=group1_modellist$sersic$xcen[i]+group1_interval$sersic$xcen[[i]]
-  group1_interval$sersic$ycen[[i]]=group1_modellist$sersic$ycen[i]+group1_interval$sersic$ycen[[i]]
-  group1_interval$sersic$mag[[i]]=group1_modellist$sersic$mag[i]+group1_interval$sersic$mag[[i]]
-  group1_interval$sersic$re[[i]]=group1_modellist$sersic$re[i]*group1_interval$sersic$re[[i]]
+<span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">2</span>){
+  group1_interval<span class="op">$</span>sersic<span class="op">$</span>xcen[[i]]=group1_modellist<span class="op">$</span>sersic<span class="op">$</span>xcen[i]<span class="op">+</span>group1_interval<span class="op">$</span>sersic<span class="op">$</span>xcen[[i]]
+  group1_interval<span class="op">$</span>sersic<span class="op">$</span>ycen[[i]]=group1_modellist<span class="op">$</span>sersic<span class="op">$</span>ycen[i]<span class="op">+</span>group1_interval<span class="op">$</span>sersic<span class="op">$</span>ycen[[i]]
+  group1_interval<span class="op">$</span>sersic<span class="op">$</span>mag[[i]]=group1_modellist<span class="op">$</span>sersic<span class="op">$</span>mag[i]<span class="op">+</span>group1_interval<span class="op">$</span>sersic<span class="op">$</span>mag[[i]]
+  group1_interval<span class="op">$</span>sersic<span class="op">$</span>re[[i]]=group1_modellist<span class="op">$</span>sersic<span class="op">$</span>re[i]<span class="op">*</span>group1_interval<span class="op">$</span>sersic<span class="op">$</span>re[[i]]
 }
 
 group1_tofit=<span class="kw">list</span>(
@@ -192,19 +194,19 @@ group1_tolog=<span class="kw">list</span>(
     <span class="dt">box=</span> <span class="kw">rep</span>(<span class="ot">FALSE</span>, <span class="dv">2</span>)
   )
 )</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sigma=<span class="kw">profoundMakeSigma</span>(image$imDat, <span class="dt">objects=</span>profound$objects, <span class="dt">gain=</span><span class="fl">0.5</span>, <span class="dt">sky=</span>profound$sky, <span class="dt">skyRMS =</span>profound$skyRMS, <span class="dt">plot=</span><span class="ot">TRUE</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_Data=<span class="kw">profitSetupData</span>(image$imDat-profound$sky, <span class="dt">sigma=</span>sigma, <span class="dt">modellist=</span>group1_modellist, <span class="dt">tofit=</span>group1_tofit, <span class="dt">tolog=</span>group1_tolog, <span class="dt">intervals=</span>group1_interval, <span class="dt">magzero=</span><span class="dv">30</span>, <span class="dt">algo.func=</span><span class="st">'optim'</span>, <span class="dt">psf=</span>psf_model, <span class="dt">region=</span><span class="kw">matrix</span>(profound$segim %in%<span class="st"> </span><span class="kw">unlist</span>(profound$group$groupsegID[<span class="dv">1</span>,<span class="st">'segID'</span>])[<span class="dv">1</span>:<span class="dv">5</span>], <span class="dv">356</span>), <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">profitLikeModel</span>(<span class="dt">parm=</span>group1_Data$init, <span class="dt">Data=</span>group1_Data, <span class="dt">makeplots=</span><span class="ot">TRUE</span>, <span class="dt">plotchisq=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sigma=<span class="kw">profoundMakeSigma</span>(image<span class="op">$</span>imDat, <span class="dt">objects=</span>profound<span class="op">$</span>objects, <span class="dt">gain=</span><span class="fl">0.5</span>, <span class="dt">sky=</span>profound<span class="op">$</span>sky, <span class="dt">skyRMS =</span>profound<span class="op">$</span>skyRMS, <span class="dt">plot=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_Data=<span class="kw">profitSetupData</span>(image<span class="op">$</span>imDat<span class="op">-</span>profound<span class="op">$</span>sky, <span class="dt">sigma=</span>sigma, <span class="dt">modellist=</span>group1_modellist, <span class="dt">tofit=</span>group1_tofit, <span class="dt">tolog=</span>group1_tolog, <span class="dt">intervals=</span>group1_interval, <span class="dt">magzero=</span><span class="dv">30</span>, <span class="dt">algo.func=</span><span class="st">'optim'</span>, <span class="dt">psf=</span>psf_model, <span class="dt">region=</span><span class="kw">matrix</span>(profound<span class="op">$</span>segim <span class="op">%in%</span><span class="st"> </span><span class="kw">unlist</span>(profound<span class="op">$</span>group<span class="op">$</span>groupsegID[<span class="dv">1</span>,<span class="st">'segID'</span>])[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>], <span class="dv">356</span>), <span class="dt">verbose=</span><span class="ot">FALSE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">profitLikeModel</span>(<span class="dt">parm=</span>group1_Data<span class="op">$</span>init, <span class="dt">Data=</span>group1_Data, <span class="dt">makeplots=</span><span class="ot">TRUE</span>, <span class="dt">plotchisq=</span><span class="ot">TRUE</span>)</code></pre></div>
 <p>Next we will run a simple optimisation scheme (because we do not have all day…)</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_fit=<span class="kw">optim</span>(group1_Data$init, profitLikeModel, <span class="dt">method=</span><span class="st">'BFGS'</span>, <span class="dt">Data=</span>group1_Data, <span class="dt">control=</span><span class="kw">list</span>(<span class="dt">fnscale=</span>-<span class="dv">1</span>))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_fit=<span class="kw">optim</span>(group1_Data<span class="op">$</span>init, profitLikeModel, <span class="dt">method=</span><span class="st">'BFGS'</span>, <span class="dt">Data=</span>group1_Data, <span class="dt">control=</span><span class="kw">list</span>(<span class="dt">fnscale=</span><span class="op">-</span><span class="dv">1</span>))</code></pre></div>
 <p>And check the results!</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">profitLikeModel</span>(<span class="dt">parm=</span>group1_fit$par, <span class="dt">Data=</span>group1_Data, <span class="dt">makeplots=</span><span class="ot">TRUE</span>, <span class="dt">plotchisq=</span><span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">profitLikeModel</span>(<span class="dt">parm=</span>group1_fit<span class="op">$</span>par, <span class="dt">Data=</span>group1_Data, <span class="dt">makeplots=</span><span class="ot">TRUE</span>, <span class="dt">plotchisq=</span><span class="ot">TRUE</span>)</code></pre></div>
 <p>That is looking pretty pretty pretty good. A bit of residual structure in the central part, but that is as we might expect seeing as we did not attempt to create a more complex (e.g. elliptical and boxy) PSF.</p>
 <p>We can compare the inputs and outputs easily too:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_modellist_fit=<span class="kw">profitRemakeModellist</span>(<span class="dt">parm=</span>group1_fit$par, <span class="dt">Data=</span>group1_Data)$modellist
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">group1_modellist_fit=<span class="kw">profitRemakeModellist</span>(<span class="dt">parm=</span>group1_fit<span class="op">$</span>par, <span class="dt">Data=</span>group1_Data)<span class="op">$</span>modellist
 group1_modellist_fit</code></pre></div>
 <p>We can also see the change in a nicely formatted way if we use the relist function in R:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">relist</span>(<span class="kw">unlist</span>(group1_modellist)-<span class="kw">unlist</span>(group1_modellist_fit), <span class="dt">skeleton =</span> group1_modellist)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">relist</span>(<span class="kw">unlist</span>(group1_modellist)<span class="op">-</span><span class="kw">unlist</span>(group1_modellist_fit), <span class="dt">skeleton =</span> group1_modellist)</code></pre></div>
 <p>The stars have migrated position a small amount, as have the extended sources. The extended sources have both hit a position limit, so it might be sensible to expand the allowed x and y centre intervals. Other parameters are barely changed, e.g. the initial <strong>ProFound</strong> guesses for the Re (re) and angle (ang) are actually very good. The axial ratios for the extended sources has changed a bit, but this should be expected since these are highly elliptical sources and the convolution with the PSF will be puffing them out when measured without accounting for the PSF in <strong>ProFound</strong>.</p>
 <p>The two bright PSF magnitudes have changed the most, which is not surprising since they were blended together. It is notable that the raw magnitudes calculated by <strong>ProFound</strong> are actually nearer to the fit values than the rotstats variants. In practice, there is rarely an occasion where the raw segmented magnitudes are not a good enough a starting point for optimisation in <strong>ProFit</strong>, since it is in practice hard for them to be more than a factor two wrong in flux, which is easily accurate enough for a sensible starting point with <strong>ProFit</strong>.</p>
 

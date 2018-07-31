@@ -12,7 +12,7 @@
 
 <meta name="author" content="Aaron Robotham" />
 
-<meta name="date" content="2018-03-02" />
+<meta name="date" content="2018-07-31" />
 
 <title>ProFound: Segmentation Mapss</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">ProFound: Segmentation Mapss</h1>
 <h4 class="author"><em>Aaron Robotham</em></h4>
-<h4 class="date"><em>2018-03-02</em></h4>
+<h4 class="date"><em>2018-07-31</em></h4>
 
 
 
@@ -78,23 +78,25 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(devtools)
 <span class="kw">install_github</span>(<span class="st">'asgr/ProFound'</span>)
 <span class="kw">install_github</span>(<span class="st">'ICRAR/ProFit'</span>)</code></pre></div>
+<p>Set global evaluate (basically TRUE for GitHub version and FALSE for CRAN):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">evalglobal=<span class="ot">FALSE</span></code></pre></div>
 <p>First load the libraries we need:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ProFit)
 <span class="kw">library</span>(ProFound)</code></pre></div>
 <p>Having a good segmentation map is important for the successful running of ProFit. Luckily ProFit now comes with some utility functions to help you get there. We can start with a simple example:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">image =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G266035fitim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))$imDat
-segim_old =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G266035segim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))$imDat
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">image =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G266035fitim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))<span class="op">$</span>imDat
+segim_old =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G266035segim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))<span class="op">$</span>imDat
 segim_new =<span class="st"> </span><span class="kw">profoundMakeSegim</span>(image, <span class="dt">plot=</span><span class="ot">TRUE</span>)
 <span class="kw">profoundSegimPlot</span>(image, segim_old)</code></pre></div>
 <p>The above works pretty well using just the default options in profitMakeSegim, but it is noticeably tighter than the segmentation that we made for the ProFit package. This took a SExtractor segmentation map as the starting point, and expanded the segments out. We can do the same thing within ProFit:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_expand=<span class="kw">profoundMakeSegimExpand</span>(image, segim_new$segim, <span class="dt">skycut=</span>-<span class="dv">1</span>, <span class="dt">expandsigma=</span><span class="dv">5</span>, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">31</span>,<span class="dv">31</span>), <span class="dt">expand=</span><span class="dv">1</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_expand=<span class="kw">profoundMakeSegimExpand</span>(image, segim_new<span class="op">$</span>segim, <span class="dt">skycut=</span><span class="op">-</span><span class="dv">1</span>, <span class="dt">expandsigma=</span><span class="dv">5</span>, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">31</span>,<span class="dv">31</span>), <span class="dt">expand=</span><span class="dv">1</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>)
 <span class="kw">profoundSegimPlot</span>(image, segim_old)</code></pre></div>
 <p>This expanded segmentation map is now very similar to the hand-crafted one included with the package.</p>
 <p>This is a lower level method of getting out expanded segments. In practice most people will likely be happy with the output from profoundProFound:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_expand=<span class="kw">profoundProFound</span>(image, <span class="dt">plot=</span><span class="ot">TRUE</span>)</code></pre></div>
 <p>A harder example is galaxy G278109 due to a deeply embedded source in the main galaxy that causes a pretty brutal looking saddle-point deblend:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">image =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G278109fitim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))$imDat
-segim_old =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G278109segim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))$imDat
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">image =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G278109fitim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))<span class="op">$</span>imDat
+segim_old =<span class="st"> </span><span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'KiDS/G278109segim.fits'</span>, <span class="dt">package=</span><span class="st">&quot;ProFit&quot;</span>))<span class="op">$</span>imDat
 segim_new =<span class="st"> </span><span class="kw">profoundMakeSegim</span>(image, <span class="dt">plot=</span><span class="ot">TRUE</span>)
 <span class="kw">profoundSegimPlot</span>(image, segim_old)</code></pre></div>
 <p>A good start might be to merge the main two segments that the watershed has split the galaxy into. We can do this by raising the tolerance:</p>
@@ -103,15 +105,15 @@ segim_new =<span class="st"> </span><span class="kw">profoundMakeSegim</span>(im
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_diff =<span class="st"> </span><span class="kw">profoundMakeSegim</span>(<span class="kw">profoundImDiff</span>(image), <span class="dt">skycut=</span><span class="dv">2</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>)</code></pre></div>
 <p>This type of segmentation has the ability to identify bright sources embedded in relatively smooth backgrounds, as we had here.</p>
 <p>We can find the new segments for our largest object easily:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">unique</span>(segim_new_diff$segim[segim_new$segim==<span class="dv">1</span>])</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">unique</span>(segim_new_diff<span class="op">$</span>segim[segim_new<span class="op">$</span>segim<span class="op">==</span><span class="dv">1</span>])</code></pre></div>
 <p>0 refers to sky pixels, so we can ignore them, the other two segments are the core of the galaxy and the star. We can find the radial distance between the old segment and the new ones to decide which need to be added in:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sqrt</span>(<span class="kw">rowSums</span>((segim_new_diff$segstats[<span class="dv">1</span>:<span class="dv">2</span>,<span class="kw">c</span>(<span class="st">&quot;xcen&quot;</span>,<span class="st">&quot;ycen&quot;</span>)]-segim_new$segstats[<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">1</span>),<span class="kw">c</span>(<span class="st">&quot;xcen&quot;</span>,<span class="st">&quot;ycen&quot;</span>)])^<span class="dv">2</span>))</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sqrt</span>(<span class="kw">rowSums</span>((segim_new_diff<span class="op">$</span>segstats[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>,<span class="kw">c</span>(<span class="st">&quot;xcen&quot;</span>,<span class="st">&quot;ycen&quot;</span>)]<span class="op">-</span>segim_new<span class="op">$</span>segstats[<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">1</span>),<span class="kw">c</span>(<span class="st">&quot;xcen&quot;</span>,<span class="st">&quot;ycen&quot;</span>)])<span class="op">^</span><span class="dv">2</span>))</code></pre></div>
 <p>The first segment shares the same flux weighted centre to a sub-pixel distance and the second is ~30 pixels away. We can be certain the first segment is describing the same object, and the second is an additional object.</p>
 <p>Now we can add this new object to our image only segmentation map:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new$segim[segim_new_diff$segim==<span class="dv">2</span>]=<span class="kw">max</span>(segim_new$segim)+<span class="dv">1</span>
-<span class="kw">profoundSegimPlot</span>(image, segim_new$segim)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new<span class="op">$</span>segim[segim_new_diff<span class="op">$</span>segim<span class="op">==</span><span class="dv">2</span>]=<span class="kw">max</span>(segim_new<span class="op">$</span>segim)<span class="op">+</span><span class="dv">1</span>
+<span class="kw">profoundSegimPlot</span>(image, segim_new<span class="op">$</span>segim)</code></pre></div>
 <p>We should probably expand the main segment out, as before:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_expand=<span class="kw">profoundMakeSegimExpand</span>(image, segim_new$segim, <span class="dt">skycut=</span>-<span class="dv">1</span>, <span class="dt">expandsigma=</span><span class="dv">5</span>, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">31</span>,<span class="dv">31</span>), <span class="dt">expand=</span><span class="dv">1</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">segim_new_expand=<span class="kw">profoundMakeSegimExpand</span>(image, segim_new<span class="op">$</span>segim, <span class="dt">skycut=</span><span class="op">-</span><span class="dv">1</span>, <span class="dt">expandsigma=</span><span class="dv">5</span>, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">31</span>,<span class="dv">31</span>), <span class="dt">expand=</span><span class="dv">1</span>, <span class="dt">plot=</span><span class="ot">TRUE</span>)
 <span class="kw">profoundSegimPlot</span>(image, segim_old)</code></pre></div>
 
 

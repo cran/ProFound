@@ -12,7 +12,7 @@
 
 <meta name="author" content="Aaron Robotham" />
 
-<meta name="date" content="2018-03-02" />
+<meta name="date" content="2018-07-31" />
 
 <title>ProFound: Stacking Images</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">ProFound: Stacking Images</h1>
 <h4 class="author"><em>Aaron Robotham</em></h4>
-<h4 class="date"><em>2018-03-02</em></h4>
+<h4 class="date"><em>2018-07-31</em></h4>
 
 
 
@@ -78,6 +78,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(devtools)
 <span class="kw">install_github</span>(<span class="st">'asgr/ProFound'</span>)
 <span class="kw">install_github</span>(<span class="st">'ICRAR/ProFit'</span>)</code></pre></div>
+<p>Set global evaluate (basically TRUE for GitHub version and FALSE for CRAN):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">evalglobal=<span class="ot">FALSE</span></code></pre></div>
 <p>First of all we load <strong>ProFit</strong> and <strong>ProFound</strong>. We also need to use <strong>LaplacesDemon</strong> because it gives us the Pareto (power-law) distribution that we will use to realistically sample our magnitude ranges later.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ProFound)
 <span class="kw">library</span>(ProFit)
@@ -91,7 +93,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">666</span>)
 
 ExamplePSF=<span class="kw">profitMakeGaussianPSF</span>(<span class="dt">fwhm=</span><span class="dv">5</span>)
-ExamplePSF=ExamplePSF/<span class="kw">sum</span>(ExamplePSF)
+ExamplePSF=ExamplePSF<span class="op">/</span><span class="kw">sum</span>(ExamplePSF)
 
 Ngal=<span class="dv">200</span>
 Nstar=<span class="dv">200</span>
@@ -100,35 +102,35 @@ model_test=<span class="kw">list</span>(
     <span class="dt">sersic=</span><span class="kw">list</span>(
         <span class="dt">xcen=</span><span class="kw">runif</span>(Ngal,<span class="dv">0</span>,<span class="dv">1000</span>),
         <span class="dt">ycen=</span><span class="kw">runif</span>(Ngal,<span class="dv">0</span>,<span class="dv">1000</span>),
-        <span class="dt">mag=</span><span class="dv">24</span>-<span class="kw">rpareto</span>(Ngal,<span class="dv">2</span>),
-        <span class="dt">re=</span><span class="kw">rpois</span>(Ngal,<span class="dv">5</span>)+<span class="kw">runif</span>(Ngal),
+        <span class="dt">mag=</span><span class="dv">24</span><span class="op">-</span><span class="kw">rpareto</span>(Ngal,<span class="dv">2</span>),
+        <span class="dt">re=</span><span class="kw">rpois</span>(Ngal,<span class="dv">5</span>)<span class="op">+</span><span class="kw">runif</span>(Ngal),
         <span class="dt">nser=</span><span class="kw">runif</span>(Ngal,<span class="dv">1</span>,<span class="dv">4</span>),
         <span class="dt">ang=</span><span class="kw">runif</span>(Ngal,<span class="dv">0</span>,<span class="dv">180</span>),
         <span class="dt">axrat=</span><span class="kw">runif</span>(Ngal,<span class="fl">0.3</span>,<span class="dv">1</span>),
-        <span class="dt">box=</span><span class="kw">runif</span>(Ngal,-<span class="fl">0.3</span>,<span class="fl">0.3</span>)
+        <span class="dt">box=</span><span class="kw">runif</span>(Ngal,<span class="op">-</span><span class="fl">0.3</span>,<span class="fl">0.3</span>)
     ),
     <span class="dt">pointsource=</span><span class="kw">list</span>(
         <span class="dt">xcen=</span><span class="kw">runif</span>(Nstar,<span class="dv">0</span>,<span class="dv">1000</span>),
         <span class="dt">ycen=</span><span class="kw">runif</span>(Nstar,<span class="dv">0</span>,<span class="dv">1000</span>),
-        <span class="dt">mag=</span><span class="dv">24</span>-<span class="kw">rpareto</span>(Nstar,<span class="fl">1.5</span>)
+        <span class="dt">mag=</span><span class="dv">24</span><span class="op">-</span><span class="kw">rpareto</span>(Nstar,<span class="fl">1.5</span>)
     )
 )
 
-model_test$sersic$mag[model_test$sersic$mag&lt;<span class="dv">15</span>]=<span class="kw">runif</span>(<span class="kw">length</span>(<span class="kw">which</span>(model_test$sersic$mag&lt;<span class="dv">15</span>)),<span class="dv">15</span>,<span class="dv">22</span>)
-model_test$pointsource$mag[model_test$pointsource$mag&lt;<span class="dv">15</span>]=<span class="kw">runif</span>(<span class="kw">length</span>(<span class="kw">which</span>(model_test$pointsource$mag&lt;<span class="dv">15</span>)),<span class="dv">15</span>,<span class="dv">22</span>)
+model_test<span class="op">$</span>sersic<span class="op">$</span>mag[model_test<span class="op">$</span>sersic<span class="op">$</span>mag<span class="op">&lt;</span><span class="dv">15</span>]=<span class="kw">runif</span>(<span class="kw">length</span>(<span class="kw">which</span>(model_test<span class="op">$</span>sersic<span class="op">$</span>mag<span class="op">&lt;</span><span class="dv">15</span>)),<span class="dv">15</span>,<span class="dv">22</span>)
+model_test<span class="op">$</span>pointsource<span class="op">$</span>mag[model_test<span class="op">$</span>pointsource<span class="op">$</span>mag<span class="op">&lt;</span><span class="dv">15</span>]=<span class="kw">runif</span>(<span class="kw">length</span>(<span class="kw">which</span>(model_test<span class="op">$</span>pointsource<span class="op">$</span>mag<span class="op">&lt;</span><span class="dv">15</span>)),<span class="dv">15</span>,<span class="dv">22</span>)
 
-im_test&lt;-<span class="kw">profitMakeModel</span>(<span class="dt">modellist=</span>model_test, <span class="dt">psf=</span>ExamplePSF, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">1000</span>,<span class="dv">1000</span>), <span class="dt">magzero =</span> <span class="dv">30</span>)$z</code></pre></div>
+im_test&lt;-<span class="kw">profitMakeModel</span>(<span class="dt">modellist=</span>model_test, <span class="dt">psf=</span>ExamplePSF, <span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">1000</span>,<span class="dv">1000</span>), <span class="dt">magzero =</span> <span class="dv">30</span>)<span class="op">$</span>z</code></pre></div>
 <p>Now we can add noise in a realistic manner. Image-1 is the nominal depth of a single Z-band VIKING image, whereas the others are each one quarter the depth (which gives the variance, hence a factor of two in standard-deviation) so the four of them should achieve the same depth when stacked.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">im_test1=im_test+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="kw">sqrt</span>(im_test))
-im_test1=im_test1+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">10</span>)
-im_test2a=im_test+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="kw">sqrt</span>(im_test))
-im_test2a=im_test2a+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="dv">10</span>)
-im_test2b=im_test+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="kw">sqrt</span>(im_test))
-im_test2b=im_test2b+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="dv">10</span>)
-im_test2c=im_test+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="kw">sqrt</span>(im_test))
-im_test2c=im_test2c+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="dv">10</span>)
-im_test2d=im_test+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="kw">sqrt</span>(im_test))
-im_test2d=im_test2d+<span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span>*<span class="dv">10</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">im_test1=im_test<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="kw">sqrt</span>(im_test))
+im_test1=im_test1<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">10</span>)
+im_test2a=im_test<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="kw">sqrt</span>(im_test))
+im_test2a=im_test2a<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="dv">10</span>)
+im_test2b=im_test<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="kw">sqrt</span>(im_test))
+im_test2b=im_test2b<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="dv">10</span>)
+im_test2c=im_test<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="kw">sqrt</span>(im_test))
+im_test2c=im_test2c<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="dv">10</span>)
+im_test2d=im_test<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="kw">sqrt</span>(im_test))
+im_test2d=im_test2d<span class="op">+</span><span class="kw">rnorm</span>(<span class="fl">1e6</span>,<span class="dt">sd=</span><span class="dv">2</span><span class="op">*</span><span class="dv">10</span>)</code></pre></div>
 <p>We now need to run <strong>ProFound</strong> on the 5 images separately:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_test1=<span class="kw">profoundProFound</span>(im_test1, <span class="dt">skycut=</span><span class="dv">1</span>)
 pro_test2a=<span class="kw">profoundProFound</span>(im_test2a, <span class="dt">skycut=</span><span class="dv">1</span>)
@@ -136,12 +138,12 @@ pro_test2b=<span class="kw">profoundProFound</span>(im_test2b, <span class="dt">
 pro_test2c=<span class="kw">profoundProFound</span>(im_test2c, <span class="dt">skycut=</span><span class="dv">1</span>)
 pro_test2d=<span class="kw">profoundProFound</span>(im_test2d, <span class="dt">skycut=</span><span class="dv">1</span>)</code></pre></div>
 <p>We can now stack the images based on the sky and sky-RMS:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">stack=<span class="kw">profoundMakeStack</span>(<span class="dt">image_list =</span> <span class="kw">list</span>(im_test1, im_test2a, im_test2b, im_test2c, im_test2d), <span class="dt">sky_list =</span> <span class="kw">list</span>(pro_test1$sky, pro_test2a$sky, pro_test2b$sky, pro_test2c$sky, pro_test2d$sky), <span class="dt">skyRMS_list =</span> <span class="kw">list</span>(pro_test1$skyRMS, pro_test2a$skyRMS, pro_test2b$skyRMS, pro_test2c$skyRMS, pro_test2d$skyRMS), <span class="dt">magzero_in=</span><span class="kw">c</span>(<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>), <span class="dt">magzero_out=</span><span class="dv">30</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">stack=<span class="kw">profoundMakeStack</span>(<span class="dt">image_list =</span> <span class="kw">list</span>(im_test1, im_test2a, im_test2b, im_test2c, im_test2d), <span class="dt">sky_list =</span> <span class="kw">list</span>(pro_test1<span class="op">$</span>sky, pro_test2a<span class="op">$</span>sky, pro_test2b<span class="op">$</span>sky, pro_test2c<span class="op">$</span>sky, pro_test2d<span class="op">$</span>sky), <span class="dt">skyRMS_list =</span> <span class="kw">list</span>(pro_test1<span class="op">$</span>skyRMS, pro_test2a<span class="op">$</span>skyRMS, pro_test2b<span class="op">$</span>skyRMS, pro_test2c<span class="op">$</span>skyRMS, pro_test2d<span class="op">$</span>skyRMS), <span class="dt">magzero_in=</span><span class="kw">c</span>(<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>,<span class="dv">30</span>), <span class="dt">magzero_out=</span><span class="dv">30</span>)</code></pre></div>
 <p>Finally we can re-run <strong>ProFound</strong> to check the depth achieved. If the input standard-deviation of image-1 is 10, and each of the other 4 images is 20, then the final achieved sky-RMS should be <span class="math inline">\(\frac{1}{\sqrt{\frac{1}{10^2}+\frac{1}{20^2}+\frac{1}{20^2}+\frac{1}{20^2}+\frac{1}{20^2}}}=\frac{1}{\sqrt{\frac{4}{20^2}+\frac{1}{10^2}}}=\frac{1}{\sqrt{\frac{8}{400}}} \sim 7.07\)</span>.</p>
 <p>First run <strong>ProFound</strong>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_stack=<span class="kw">profoundProFound</span>(stack$image, <span class="dt">skycut=</span><span class="dv">1</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pro_stack=<span class="kw">profoundProFound</span>(stack<span class="op">$</span>image, <span class="dt">skycut=</span><span class="dv">1</span>)</code></pre></div>
 <p>Then can check the distribution of the sky pixels directly:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">maghist</span>(pro_stack$skyRMS, <span class="dt">grid=</span><span class="ot">TRUE</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">maghist</span>(pro_stack<span class="op">$</span>skyRMS, <span class="dt">grid=</span><span class="ot">TRUE</span>)
 <span class="kw">abline</span>(<span class="dt">v=</span><span class="fl">7.07</span>, <span class="dt">col=</span><span class="st">'red'</span>)</code></pre></div>
 <p>We look to have achieved our expected depth of a sky RMS close to 7.07!</p>
 </div>
