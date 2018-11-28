@@ -2,13 +2,13 @@
 \alias{profoundSkyEst}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Local Sky Estimator
+Old Sky Estimator (Somewhat Defunct)
 }
 \description{
 A high level utility to estimate the sky properties of a supplied \option{image}. This is closely related to the equivalent routines available in the LAMBDAR R package.
 }
 \usage{
-profoundSkyEst(image, objects, mask, cutlo = cuthi/2,
+profoundSkyEst(image = NULL, objects = NULL, mask = NULL, cutlo = cuthi/2,
 cuthi = sqrt(sum((dim(image)/2)^2)), skycut = 'auto', clipiters = 5, radweight = 0,
 plot = FALSE, ...)
 }

@@ -63,6 +63,29 @@ library(ProFound)
 ## ---- eval=evalglobal, fig.width=6, fig.height=6, dpi=40-----------------
 #  magplot(pro_NUV_warpK$segstats$mag, multi$cat_tot$mag_NUVt, grid=TRUE)
 
+## ---- eval=evalglobal, fig.width=6, fig.height=6, dpi=40-----------------
+#  profoundSegimPlot(multi$pro_detect$image, multi$pro_detect$group$groupim)
+
+## ---- eval=evalglobal, fig.width=6, fig.height=6, dpi=40-----------------
+#  magplot(multi$cat_grp$mag_rg, multi$cat_tot[match(multi$cat_grp$groupID, multi$cat_tot$segID),"mag_rt"], grid=TRUE, log='', xlab='Group Mag', ylab='Total Mag')
+#  abline(0,1,col='red')
+
+## ---- eval=evalglobal----------------------------------------------------
+#  merge_cat=profoundCatMerge(segstats=multi$cat_tot, groupstats=multi$cat_grp, groupsegID=multi$pro_detect$group$groupsegID, groupID_merge=1)
+#  multi$cat_tot[1:5,c('segID', 'mag_rt')]
+#  multi$cat_grp[1:5,c('groupID', 'mag_rg')]
+#  merge_cat[1:5,c('segID', 'mag_rt', 'origin')]
+
+## ---- eval=evalglobal----------------------------------------------------
+#  multi$pro_detect$group$groupsegID[1,"segID"][[1]]
+
+## ---- eval=evalglobal----------------------------------------------------
+#  merge_cat_col=multi$cat_col[multi$cat_col$segID %in% merge_cat$segID,]
+
+## ---- eval=evalglobal, fig.width=6, fig.height=6, dpi=40-----------------
+#  magplot(merge_cat$mag_rt, merge_cat_col$mag_rc, xlab='Total Mag', ylab='Colour Mag', grid=TRUE)
+#  abline(0,1,col='red')
+
 ## ---- eval=evalglobal----------------------------------------------------
 #  segim_r=profoundSegimWarp(segim_in=pro_K$segim, header_in=VISTA_K$hdr, header_out=VST_r$hdr)
 #  segim_NUV=profoundSegimWarp(segim_in=pro_K$segim, header_in=VISTA_K$hdr, header_out=GALEX_NUV$hdr)

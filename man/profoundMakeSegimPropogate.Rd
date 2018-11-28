@@ -8,8 +8,8 @@ Propagate Identified Segments
 Propagates all identified segments across the full image, only ignoring masked regions. This serves to identify which segment every pixel is most likely to belong to using a number of image related criteria. Uses EBImage's propagate function to do the grunt work.
 }
 \usage{
-profoundMakeSegimPropagate(image, segim, objects, mask, sky = 0, lambda = 1e-04,
-plot=FALSE, ...)
+profoundMakeSegimPropagate(image = NULL, segim = NULL, objects = NULL, mask = NULL,
+sky = 0, lambda = 1e-04, plot = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -17,7 +17,7 @@ plot=FALSE, ...)
 Numeric matrix; required, the image we want to analyse. Note, image NAs are treated as masked pixels.
 }
   \item{segim}{
-Numeric matrix; required, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
+Integer matrix; required, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
 }
   \item{objects}{
 Boolean matrix; optional, object mask where 1 is object and 0 is sky. If provided, this matrix *must* be the same dimensions as \option{image}.

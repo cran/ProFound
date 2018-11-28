@@ -8,8 +8,8 @@ Calculate multiple annulus properties of iso-photal ellipses
 Returns multiple ellipse properties for an image, assumed to be monotonically decreasing in flux from a bright centre (i.e. a classic galaxy).
 }
 \usage{
-profoundGetEllipses(image, segim, segID = 1, levels = 10, magzero = 0, pixscale = 1,
-fixcen = TRUE, dobox = FALSE, plot = TRUE, ...)
+profoundGetEllipses(image = NULL, segim = NULL, segID = 1, levels = 10, magzero = 0,
+pixscale = 1, fixcen = TRUE, dobox = FALSE, plot = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -17,13 +17,13 @@ fixcen = TRUE, dobox = FALSE, plot = TRUE, ...)
 Numeric matrix; required, the image we want to analyse.
 }
   \item{segim}{
-Numeric matrix; optional, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
+Integer matrix; optional, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
 }
   \item{segID}{
 Integer scalar; optional, the desired \option{segim} segment to extract from the \option{image}.
 }
   \item{levels}{
-Integer scalar; the number of ellipse levels to extract from the \option{image}.
+Integer scalar or vector. If a scalar this is the number of ellipse levels to extract from the \option{image}. If a vector this specfies the extremes of all fractional levels, i.e. it should generally start at 0 and end at 1 to capture all isophotal levels.
 }
   \item{magzero}{
 Numeric scalar; the magnitude zero point. What this implies depends on the magnitude system being used (e.g. AB or Vega). If provided along with \option{pixscale} then the surface brightness output will represent mag/asec^2.

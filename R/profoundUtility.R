@@ -31,7 +31,7 @@ profoundSB2Flux=function(SB=0, magzero=0, pixscale=1){
   return(profoundMag2Flux(mag=mag, magzero=magzero))
 }
 
-profoundImBlur=function(image, sigma=1, plot=FALSE, ...){
+profoundImBlur=function(image=NULL, sigma=1, plot=FALSE, ...){
   if(requireNamespace("imager", quietly = TRUE)){
     output=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
   }else{
@@ -44,10 +44,10 @@ profoundImBlur=function(image, sigma=1, plot=FALSE, ...){
   if(plot){
     magimage(output, ...)
   }
-  return=output
+  invisible(output)
 }
 
-profoundImGrad=function(image, sigma=1, plot=FALSE, ...){
+profoundImGrad=function(image=NULL, sigma=1, plot=FALSE, ...){
   if(!requireNamespace("imager", quietly = TRUE)){
     stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
   }
@@ -55,10 +55,10 @@ profoundImGrad=function(image, sigma=1, plot=FALSE, ...){
   if(plot){
     magimage(output, ...)
   }
-  return=output
+  invisible(output)
 }
 
-profoundImDiff=function(image,sigma=1, plot=FALSE, ...){
+profoundImDiff=function(image=NULL,sigma=1, plot=FALSE, ...){
   if(!requireNamespace("imager", quietly = TRUE)){
     stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
   }
@@ -67,11 +67,11 @@ profoundImDiff=function(image,sigma=1, plot=FALSE, ...){
   if(plot){
     magimage(output, ...)
   }
-  return=output
+  invisible(output)
 }
 
-profoundMakeSigma=function(image, objects, sky=0, skyRMS=0, readRMS=0, darkRMS=0, skycut=0, gain=1, image_units='ADU', sky_units='ADU', read_units='ADU', dark_units='ADU', output_units='ADU', plot=FALSE, ...){
-  if(!missing(objects)){
+profoundMakeSigma=function(image=NULL, objects=NULL, sky=0, skyRMS=0, readRMS=0, darkRMS=0, skycut=0, gain=1, image_units='ADU', sky_units='ADU', read_units='ADU', dark_units='ADU', output_units='ADU', plot=FALSE, ...){
+  if(!is.null(objects)){
     if(length(objects)==length(image)){
       image[objects==0]=0
     }
@@ -123,10 +123,10 @@ profoundMakeSigma=function(image, objects, sky=0, skyRMS=0, readRMS=0, darkRMS=0
   if(plot){
     magimage(sigma, ...)
   }
-  return=sigma
+  invisible(sigma)
 }
 
-profoundGainEst=function(image, mask=0, objects=0, sky=0, skyRMS=1){
+profoundGainEst=function(image=NULL, mask=0, objects=0, sky=0, skyRMS=1){
   if(missing(sky)){
     sky=profoundSkyEst(image=image, mask=mask, objects=objects,plot=FALSE)$sky
   }
@@ -143,17 +143,100 @@ profoundGainEst=function(image, mask=0, objects=0, sky=0, skyRMS=1){
     floor=(skyRMS*gain)^2
     trialdata=tempval*gain+floor
     value=-sum(dpois(x=round(trialdata), lambda=floor, log=T))
-    return=value
+    invisible(value)
   }
 
   suppressWarnings({findgain=optim(par=startgain, fn=tempfunc, method="Brent", tempval=tempval, skyRMS=skyRMS, lower=startgain-2, upper=startgain+2)})
-  return=10^findgain$par
+  invisible(10^findgain$par)
+}
+
+profoundCatMerge=function(segstats=NULL, groupstats=NULL, groupsegID=NULL, groupID_merge=NULL, flag=TRUE, rowreset=FALSE){
+  if(! is.null(groupID_merge)){
+    remove_segIDs=unique(unlist(groupsegID[groupsegID$groupID %in% groupID_merge,'segID']))
+    remove_segIDs=remove_segIDs[!remove_segIDs %in% groupID_merge]
+    segstats=segstats[! segstats$segID %in% remove_segIDs,]
+    segstats[segstats$segID %in% groupID_merge,2:dim(segstats)[2]]=NA
+    segstats[segstats$segID %in% groupID_merge,1:dim(groupstats)[2]]=groupstats[groupstats$groupID %in% groupID_merge,]
+    segstats=segstats[order(segstats$segID),]
+  }
+  if(flag){
+    segstats=cbind(segstats, origin='seg', stringsAsFactors=FALSE)
+    segstats[segstats$segID %in% groupID_merge,'origin']='group'
+  }
+  if(rowreset){
+    row.names(segstats)=NULL
+  }
+  invisible(segstats)
+}
+
+profoundFluxDeblend=function(image=NULL, segim=NULL, segstats=NULL, groupim=NULL, groupsegID=NULL, magzero=0, df=3, radtrunc=2, iterative=FALSE, doallstats=TRUE){
+  if(class(image)=='profound'){
+    if(is.null(segim)){segim=image$segim}
+    if(is.null(segstats)){segstats=image$segstats}
+    if(is.null(groupim)){groupim=image$group$groupim}
+    if(is.null(groupsegID)){groupsegID=image$group$groupsegID}
+    if(is.null(magzero)){magzero=image$magzero}
+    image=image$image-image$sky
+  }
+  groupsegID=groupsegID[groupsegID$Ngroup>1,,drop=FALSE]
+  output=data.frame(groupID=rep(groupsegID$groupID,groupsegID$Ngroup), segID=unlist(groupsegID$segID), flux_db=NA, mag_db=NA, N100_db=NA)
+  if(iterative){
+    output[,"flux_db"]=segstats[match(output$segID, segstats$segID),"flux"]
+    output=output[order(output[,"groupID"],-output[,"flux_db"]),]
+  }
+  Npad=1
+  image_temp=image
+  for(i in 1:dim(groupsegID)[1]){
+    Ngroup=groupsegID[i,"Ngroup"]
+    segIDlist=output[output[,'groupID']==groupsegID[i,"groupID"],"segID"]
+    segIDlist=segIDlist[segIDlist>0]
+  
+    tempgridgroup=which(groupim==groupsegID[i,"groupID"], arr.ind=TRUE)
+    weightmatrix=matrix(0,length(tempgridgroup[,1]),length(segIDlist))
+    
+    for(i in 1:length(segIDlist)){
+      tempgridseg=which(segim[tempgridgroup]==segIDlist[i])
+  
+      groupout=.profoundEllipse(x=tempgridgroup[,1],y=tempgridgroup[,2],flux=image_temp[tempgridgroup],xcen=segstats[segstats$segID==segIDlist[i],"xmax"]+0.5,ycen=segstats[segstats$segID==segIDlist[i],"ymax"]+0.5,ang=segstats[segstats$segID==segIDlist[i],"ang"],axrat=segstats[segstats$segID==segIDlist[i],"axrat"])
+      segout=.profoundEllipse(x=tempgridgroup[tempgridseg,1],y=tempgridgroup[tempgridseg,2],flux=image_temp[tempgridgroup[tempgridseg,]],xcen=segstats[segstats$segID==segIDlist[i],"xmax"]+0.5,ycen=segstats[segstats$segID==segIDlist[i],"ymax"]+0.5,ang=segstats[segstats$segID==segIDlist[i],"ang"],axrat=segstats[segstats$segID==segIDlist[i],"axrat"])
+    #tempspline=smooth.spline(segout[segout[,2]>0,1],log10(segout[segout[,2]>0,2]), df=df)
+      select=which(segout[,2]>0)
+      if(length(unique(segout[select,1]))>df){
+        weightmatrix[,i]=10^predict(smooth.spline(segout[select,1],log10(segout[select,2]), df=df)$fit, groupout[,1])$y
+        weightmatrix[groupout[,1]>radtrunc*max(segout[,1]),i]=0
+      }else{
+        weightmatrix[,i]=0
+      }
+      if(iterative){
+        image_temp[tempgridgroup]=image_temp[tempgridgroup]-weightmatrix[,i]
+      }
+    }
+    weightmatrix=weightmatrix/.rowSums(weightmatrix, dim(weightmatrix)[1], dim(weightmatrix)[2])
+    output[Npad:(Npad+Ngroup-1),"flux_db"]=.colSums(weightmatrix*image[tempgridgroup], dim(weightmatrix)[1], dim(weightmatrix)[2])
+    output[Npad:(Npad+Ngroup-1),"N100_db"]=.colSums(weightmatrix, dim(weightmatrix)[1], dim(weightmatrix)[2])
+    Npad=Npad+Ngroup
+  }
+  output[,"mag_db"]=profoundFlux2Mag(flux=output[,'flux_db'], magzero=magzero)
+  
+  if(doallstats){
+    output=output[match(segstats$segID,output$segID),]
+    output[is.na(output[,"flux_db"]),c("segID", "flux_db", "mag_db", "N100_db")]=segstats[is.na(output[,"flux_db"]),c("segID", "flux","mag","N100")]
+    output=cbind(output, flux_err_sky_db=segstats[,"flux_err_sky"]*sqrt(output[,'N100_db']/segstats[,'N100']))
+    output=cbind(output, flux_err_skyRMS_db=segstats[,"flux_err_skyRMS"]*sqrt(output[,'N100_db']/segstats[,'N100']))
+    output=cbind(output, flux_err_shot_db=segstats[,"flux_err_shot"]*suppressWarnings(sqrt(output[,'flux_db']/segstats[,'flux'])))
+    output=cbind(output, flux_err_db=sqrt(output[,'flux_err_sky_db']^2+output[,'flux_err_skyRMS_db']^2+output[,'flux_err_shot_db']^2))
+    output=cbind(output, mag_err_db=(2.5/log(10))*abs(output[,'flux_err_db']/output[,'flux_db']))
+  }else if(iterative){
+    output=output[order(output[,'groupID'],output[,'segID']),]
+  }
+  
+  invisible(output)
 }
 
 ### Deprecated Functions ###
 
 # profoundGetPixScale=function(header, CD1_1=1, CD1_2=0, CD2_1=0, CD2_2=1){
-#   if(!missing(header)){
+#   if(!is.null(header)){
 #     if(is.data.frame(header) | is.matrix(header)){
 #       locs=match(c('CD1_1','CD1_2','CD2_1','CD2_2'),header[,1])
 #       headerWCS=data.frame(header[locs,1],as.numeric(header[locs,2]))

@@ -1,4 +1,4 @@
-profoundMakeStack=function(image_list, sky_list=NULL, skyRMS_list=NULL, magzero_in=0, magzero_out=0){
+profoundMakeStack=function(image_list=NULL, sky_list=NULL, skyRMS_list=NULL, magzero_in=0, magzero_out=0){
   if(is.list(image_list)){
     if(is.null(sky_list)==FALSE){
       if(length(image_list)!=length(sky_list)){stop('sky_list length does not match image_list length!')}
@@ -14,42 +14,58 @@ profoundMakeStack=function(image_list, sky_list=NULL, skyRMS_list=NULL, magzero_
     inv_var=0
     for(i in 1:length(image_list)){
       if(is.list(sky_list) & is.list(skyRMS_list)){
-        image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        sky_list[[i]]=sky_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        skyRMS_list[[i]]=skyRMS_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        stack=stack+(image_list[[i]]-sky_list[[i]])/(skyRMS_list[[i]]^2)
-        inv_var=inv_var+(1/skyRMS_list[[i]]^2)
+        if(is.null(image_list[[i]])==FALSE & is.null(sky_list[[i]])==FALSE & is.null(skyRMS_list[[i]])==FALSE){
+          image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          sky_list[[i]]=sky_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          skyRMS_list[[i]]=skyRMS_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          stack=stack+(image_list[[i]]-sky_list[[i]])/(skyRMS_list[[i]]^2)
+          inv_var=inv_var+(1/skyRMS_list[[i]]^2)
+        }else{
+          message(paste('Missing data in image_list element',i,'so will skip for stacking!'))
+        }
       }
       if(is.list(sky_list) & is.list(skyRMS_list)==FALSE){
-        image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        sky_list[[i]]=sky_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        stack=stack+(image_list[[i]]-sky_list[[i]])
-        inv_var=1
+        if(is.null(image_list[[i]])==FALSE & is.null(sky_list[[i]])==FALSE){
+          image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          sky_list[[i]]=sky_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          stack=stack+(image_list[[i]]-sky_list[[i]])
+          inv_var=1
+        }else{
+          message(paste('Missing data in image_list element',i,'so will skip for stacking!'))
+        }
       }
       if(is.list(sky_list)==FALSE & is.list(skyRMS_list)){
-        image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        skyRMS_list[[i]]=skyRMS_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        stack=stack+image_list[[i]]/(skyRMS_list[[i]]^2)
-        inv_var=inv_var+(1/skyRMS_list[[i]]^2)
+        if(is.null(image_list[[i]])==FALSE & is.null(skyRMS_list[[i]])==FALSE){
+          image_list[[i]]=image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          skyRMS_list[[i]]=skyRMS_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          stack=stack+image_list[[i]]/(skyRMS_list[[i]]^2)
+          inv_var=inv_var+(1/skyRMS_list[[i]]^2)
+        }else{
+          message(paste('Missing data in image_list element',i,'so will skip for stacking!'))
+        }
       }
       if(is.list(sky_list)==FALSE & is.list(skyRMS_list)==FALSE){
-        stack=stack+image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
-        inv_var=inv_var+1
+        if(is.null(image_list[[i]])==FALSE){
+          stack=stack+image_list[[i]]*profoundMag2Flux(magzero_in[i],magzero_out)
+          inv_var=inv_var+1
+        }else{
+          message(paste('Missing data in image_list element',i,'so will skip for stacking!'))
+        }
       }
     }
     stack=stack/inv_var
     skyRMS=sqrt(1/inv_var)
   }else{
-    if(!missing(sky_list)){
+    if(!is.null(sky_list)){
       stack=image_list-sky_list
     }else{
       stack=image_list
     }
-    if(!missing(skyRMS_list)){
+    if(!is.null(skyRMS_list)){
       skyRMS=skyRMS_list
     }else{
-      skyRMS=1
+      skyRMS=NULL
     }
   }
-return=list(image=stack, skyRMS=skyRMS, magzero=magzero_out)
+invisible(list(image=stack, skyRMS=skyRMS, magzero=magzero_out))
 }

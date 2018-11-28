@@ -9,14 +9,15 @@ Segmentation Map Expansion and Dilation
 A high level utility to achieve decent quality image segmentation based on the expansion of a pre-existing segmentation map. It uses smoothing and local flux weighted comparisons to grow the current segmentation map so as to better identify distinct objects for use in, e.g., \code{profitSetupData}.
 }
 \usage{
-profoundMakeSegimExpand(image, segim, mask, objects, skycut = 1, SBlim, magzero = 0, gain,
-pixscale = 1, sigma = 1, smooth = TRUE, expandsigma = 5, expand = "all", sky, skyRMS,
-header, verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats = FALSE,
+profoundMakeSegimExpand(image = NULL, segim = NULL, mask = NULL, objects = NULL,
+skycut = 1, SBlim = NULL, magzero = 0, gain = NULL, pixscale = 1, sigma = 1,
+smooth = TRUE, expandsigma = 5, expand = "all", sky = NULL, skyRMS = NULL, header = NULL,
+verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats = FALSE,
 offset = 1, sortcol = "segID", decreasing = FALSE, ...)
-profoundMakeSegimDilate(image, segim, mask, size = 9, shape = "disc", expand = "all",
-magzero = 0, gain, pixscale = 1, sky = 0, skyRMS = 0, header, verbose = FALSE,
-plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats =FALSE, offset = 1,
-sortcol = "segID", decreasing = FALSE, ...)
+profoundMakeSegimDilate(image = NULL, segim = NULL, mask = NULL, size = 9, shape = "disc",
+expand = "all", magzero = 0, gain = NULL, pixscale = 1, sky = 0, skyRMS = 0,
+header = NULL, verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE,
+boundstats = FALSE, offset = 1, sortcol = "segID", decreasing = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,7 +25,7 @@ sortcol = "segID", decreasing = FALSE, ...)
 Numeric matrix; required, the image we want to analyse. Note, image NAs are treated as masked pixels.
 }
   \item{segim}{
-Numeric matrix; required, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
+Integer matrix; required, the segmentation map of the image. This matrix *must* be the same dimensions as \option{image}.
 }
   \item{mask}{
 Boolean matrix; optional, parts of the image to mask out (i.e. ignore), where 1 means mask out and 0 means use for analysis. If provided, this matrix *must* be the same dimensions as \option{image}.

@@ -9,14 +9,18 @@ ProFound Source Detection
 This is the highest level source detection function provided in \code{ProFit}, calculating both the initial segmentation map and reasonable estimates for the total flux apertures for each source in an automatic manner.
 }
 \usage{
-profoundProFound(image, segim, objects, mask,  skycut=1, pixcut=3, tolerance = 4, ext = 2,
-sigma = 1, smooth = TRUE, SBlim, size = 5, shape = "disc", iters = 6, threshold = 1.05,
-converge = 'flux', magzero = 0, gain = NULL, pixscale = 1, sky, skyRMS, redosky = TRUE,
-redoskysize = 21, box = c(100,100), grid = box, type = "bilinear", skytype = "median",
-skyRMStype = "quanlo", sigmasel = 1, doclip = TRUE, shiftloc = FALSE, paddim = TRUE,
-header, verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats = FALSE,
-nearstats=boundstats, groupstats=boundstats, offset = 1, haralickstats=FALSE,
-sortcol = "segID", decreasing = FALSE, lowmemory=FALSE, keepim = TRUE, R50clean=0, ...)
+profoundProFound(image = NULL, segim = NULL, objects = NULL, mask = NULL,  skycut=1,
+pixcut=3, tolerance = 4, ext = 2, reltol = 0, cliptol = Inf, sigma = 1, smooth = TRUE,
+SBlim, size = 5, shape = "disc", iters = 6, threshold = 1.05, converge = 'flux',
+magzero = 0, gain = NULL, pixscale = 1, sky = NULL, skyRMS = NULL, redosegim = FALSE,
+redosky = TRUE, redoskysize = 21, box = c(100,100), grid = box, type = "bicubic",
+skytype = "median", skyRMStype = "quanlo", roughpedestal = FALSE, sigmasel = 1,
+skypixmin = prod(box)/2, boxadd = box/2, boxiters = 0, deblend = FALSE, df = 3,
+radtrunc = 2, iterative = FALSE, doclip = TRUE, shiftloc = FALSE, paddim = TRUE, header,
+verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats = FALSE,
+nearstats = boundstats, groupstats = boundstats, group = NULL, groupby = 'segim_orig',
+offset = 1, haralickstats = FALSE, sortcol = "segID", decreasing = FALSE,
+lowmemory = FALSE, keepim = TRUE, R50clean=0, watershed = 'EBImage', ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,7 +28,7 @@ sortcol = "segID", decreasing = FALSE, lowmemory=FALSE, keepim = TRUE, R50clean=
 Numeric matrix; required, the image we want to analyse. If \option{image} is a list as created by \code{readFITS}, \code{read.fits} of \code{\link{magcutoutWCS}} then the image part of these lists is passed to \option{image} and the correct header part is passed to \option{header}. Note, image NAs are treated as masked pixels.
 }
   \item{segim}{
-Numeric matrix; a specified segmentation map of the image. This matrix *must* be the same dimensions as \option{image} if supplied. If this option is used then \code{profoundProFound} will not compute its initial segmentation map using \code{\link{profoundMakeSegim}}, which is then dilated. Instead it will use the one passed through \option{segim}.
+Integer matrix; a specified segmentation map of the image. This matrix *must* be the same dimensions as \option{image} if supplied. If this option is used then \code{profoundProFound} will not compute its initial segmentation map using \code{\link{profoundMakeSegim}}, which is then dilated. Instead it will use the one passed through \option{segim}.
 }
   \item{objects}{
 Boolean matrix; optional, object mask where 1 is object and 0 is sky. If provided, this matrix *must* be the same dimensions as \option{image}.
@@ -43,6 +47,12 @@ Numeric scalar; the minimum height of the object in the units of skyRMS between 
 }
   \item{ext}{
 Numeric scalar; radius of the neighbourhood in pixels for the detection of neighbouring objects. Higher value smooths out small objects. Passed to \code{\link{profoundMakeSegim}}.
+}
+  \item{reltol}{
+Numeric scalar; only relevant for \option{watershed}='ProFound'. A modifier to the \option{abstol}, modifying it by the ratio of the segment peak flux divided by the saddle point flux to the power \option{reltol}. The default means the \option{reltol} has no effect since this modifier becomes 1. A larger value of \option{reltol} means segments are more aggressively merged together.
+}
+  \item{cliptol}{
+Numeric scalar; only relevant for \option{watershed}='ProFound'. If (\option{image}-\option{sky})/option{skyRMS} is above this level where segments touch then they are always merged, regardless of other criteria. When thinking in terms of sky RMS, values between 20-100 are probably appropriate for merging very bright parts of stars back together in optical data.
 }
   \item{sigma}{
 Numeric scalar; standard deviation of the blur used when \option{smooth}=TRUE. Passed to \code{\link{profoundMakeSegim}}.
@@ -83,6 +93,9 @@ User provided estimate of the absolute sky level. If this is not provided then i
   \item{skyRMS}{
 User provided estimate of the RMS of the sky. If this is not provided then it will be computed internally using \code{\link{profoundMakeSkyGrid}}. Can be a scalar or a matrix matching the dimensions of \option{image} (allows values to vary per pixel).
 }
+  \item{redosegim}{
+Logical; should the segmentation map be modified based using the interim "better sky"?  This means pixels falling below the new \option{skycut} would be excluded from the final segmentation map. This is usually only required if the sky subtraction was radically poor and complex in the first place. Will be forced to FALSE if the user supplies a segmentation map. If the user wants to flag object pixels they should pass it to \option{objects}.
+}
   \item{redosky}{
 Logical; should the sky and sky RMS grids be re-computed using the final segmentation map? This uses \code{\link{profoundMakeSkyGrid}} to compute the sky and sky RMS grids. If \option{redosky}=TRUE then the output will include the aggressively masked \option{objects_redo} image, if \option{redosky}=FALSE then \option{objects_redo} will be NA.
 }
@@ -90,13 +103,13 @@ Logical; should the sky and sky RMS grids be re-computed using the final segment
 Integer scalar; the size (e.g. width/diameter) of the dilation kernel in pixels to apply to the \option{object} mask before performing the initial and final aggressively masked sky estimates (the latter is only relevant if \option{redosky}=TRUE). Should be an odd number else will be rounded up to the nearest odd number. See \code{makeBrush}. Dilation is done by \code{\link{profoundMakeSegimDilate}}. If \option{redosky}=TRUE, the final dilated \option{objects} mask is returned as \option{objects_redo}. As a rule of thumb you probably want ~50\% of your image pixels to be masked as objects, much more than this and you might not be able to sample enough sky pixels, much more less and the sky estimates might be biased by object flux in the wings.
 }
   \item{box}{
-Integer vector; the dimensions of the box car filter to estimate the sky with.
+Integer vector; the dimensions of the box car filter to estimate the sky with. For convenience, if length 1 then both dimensions of \option{box} used internally are assumed to equal the specified \option{box}. I.e. 200 would be interpreted as c(200,200). Dependent default arguments (\option{grid}, \option{boxadd} and \option{skypixmin}) are updated sensibly.
 }
   \item{grid}{
 Integer vector; the resolution of the background grid to estimate the sky with. By default this is set to be the same as the \option{box}.
 }
   \item{type}{
-Character scalar; either "bilinear" for bilinear interpolation (default) or "bicubic" for bicubic interpolation. The former is safer, especially near edges where bicubic interpolation can go a bit crazy.  
+Character scalar; either "bilinear" for bilinear interpolation or "bicubic" for bicubic interpolation (default). The former creates sharper edges. 
 }
   \item{skytype}{
 Character scalar; the type of sky level estimator used. Allowed options are 'median' (the default), 'mean' and 'mode' (see \code{\link{profoundSkyEstLoc}} for an explanation of what these estimators do). In all cases this is the estimator applied to unmasked and non-object pixels. If \option{doclip}=TRUE then the pixels will be dynamically sigma clipped before the estimator is run. 
@@ -104,8 +117,32 @@ Character scalar; the type of sky level estimator used. Allowed options are 'med
   \item{skyRMStype}{
 Character scalar; the type of sky level estimator used. Allowed options are 'quanlo' (the default), 'quanhi', 'quanboth', and 'sd' (see \code{\link{profoundSkyEstLoc}} for an explanation of what these estimators do). In all cases this is the estimator applied to unmasked and non-object pixels. If \option{doclip}=TRUE then the pixels will be dynamically sigma clipped before the estimator is run.
 }
+  \item{roughpedestal}{
+Logical; when the initial "rough sky" is computed, should only a pedestal (based on the median of the sky map) be used for the sky? This is a good option if the image is known to contain a *very* large (many times the \option{box} size) galaxy that might otherwise be over subtracted by the initial rough sky map.
+}
   \item{sigmasel}{
 Numeric scalar; the quantile to use when trying to estimate the true standard-deviation of the sky distribution. If contamination is low then the default of 1 is about optimal in terms of S/N, but you might need to make the value lower when contamination is very high.
+}
+  \item{skypixmin}{
+Numeric scalar; the minimum number of sky pixels desired in our cutout. The default is that we need half the original number of pixels in the \option{box} to be sky.
+}
+  \item{boxadd}{
+Integer vector; the dimensions to add to the \option{box} to capture more pixels if \option{skypixmin} has not been achieved.
+}
+  \item{boxiters}{
+Integer scalar; the number of \option{box}+\option{boxadd} iterations to attempt in order to capture \option{skypixmin} sky pixels. The default means the box will not be grown at all.
+}
+  \item{deblend}{
+Logical; should segment flux be deblended using \code{\link{profoundFluxDeblend}} and these columns appended to the end of the output \option{segstats}?  
+}
+  \item{df}{
+Integer scalar; degrees of freedom for the non-parametric spline fitting. See \code{\link{profoundFluxDeblend}}.
+}
+  \item{radtrunc}{
+Numeric scalar; the maximum allowed radius beyond the edge-most segment pixel to consider when deblending. Keeping this low (1-3) ensures segments do not gather flux from very distant regions of the group. See \code{\link{profoundFluxDeblend}}.
+}
+  \item{iterative}{
+Logical; should each segment profile fit be subtracted as it goes along? TRUE tends to remove the pedestal from a large galaxy that has faint objects embedded on top. See \code{\link{profoundFluxDeblend}}.
 }
   \item{doclip}{
 Logical; should the unmasked non-object pixels used to estimate to local sky value be further sigma-clipped using \code{\link{magclip}}? Whether this is used or not is a product of the quality of the objects extraction. If all detectable objects really have been found and the dilated objects mask leaves only apparent sky pixels then an advanced user might be confident enough to set this to FALSE. If in doubt, leave as TRUE.
@@ -138,7 +175,13 @@ Logical; if TRUE then various pixel boundary statistics are computed (\option{Ne
 Logical; if TRUE then the IDs of nearby segments is calculated via \code{\link{profoundSegimNear}} and output to the returned object \option{near}. By default this option is linked to \option{boundstats}, i.e. it is assumed if you want boundary statistics then you probably also want nearby object IDs returned.
 }
   \item{groupstats}{
-Logical; if TRUE then the IDs of grouped segments is calculated via \code{\link{profoundSegimGroup}} and output to the returned object \option{group}. By default this option is linked to \option{boundstats}, i.e. it is assumed if you want boundary statistics then you probably also want grouped object IDs returned.
+Logical; if TRUE then the IDs of grouped dilated segments (based on the output \option{segim}) is calculated via \code{\link{profoundSegimGroup}} and output to the list object \option{group}. By default this option is linked to \option{boundstats}, i.e. it is assumed if you want boundary statistics then you probably also want grouped object information returned. If \option{stats}=TRUE is also set then this flag will also create the \option{groupstats} output of photometric properties of the groups.
+}
+  \item{group}{
+List; you can pass in the output from \code{\link{profoundSegimGroup}} directly, meaning groups will not be re-computed internally. This might be useful for speed in certain matched photometry applications.
+}
+  \item{groupby}{
+Character scalar; How should the grouped segmentation map be formed that will be used to produce the \option{groupstats} output? Options are either via 'segim' or 'segim_orig'. 'segim' will create more groups, 'segim_orig' will have less.
 }
   \item{offset}{
 Integer scalar; the distance to offset when searching for nearby segments (used in both \code{\link{profoundSegimStats}} and \code{\link{profoundSegimNear}}).  
@@ -160,6 +203,9 @@ Logical; if TRUE then the input \option{image} and \option{mask} matrices are pa
 }
 \item{R50clean}{
 Numeric scalar; setting this to more than 0 cleans sources for spuriously small objects. This value should be in arc-seconds if pixel scale is provided or detected, and in pixels otherwise (or if \option{pixscale}=1 is explictly set).
+}
+  \item{watershed}{
+Character; the funciton to use to achieve the watershed deblend. Allowed options are 'EBImage' for EBImage::watershed, and 'ProFound' for the new \code{Rcpp} implementation included with the \code{ProFound} package.
 }
   \item{\dots}{
 Further arguments to be passed to \code{\link{magimage}}. Only relevant is \option{plot}=TRUE.
@@ -270,7 +316,7 @@ Robotham A.S.G., et al., 2018, MNRAS, 476, 3137
 Haralick R.M., et al., 1973, IEEE, SMC-3 (6), 610
 }
 \seealso{
-\code{\link{profoundMakeSegim}}, \code{\link{profoundMakeSegimDilate}}, \code{\link{profoundMakeSegimExpand}}, \code{\link{profoundMakeSegimPropagate}}, \code{\link{profoundSegimStats}}, \code{\link{profoundSegimPlot}}
+\code{\link{profoundMakeSegim}}, \code{\link{profoundMakeSegimDilate}}, \code{\link{profoundMakeSegimExpand}}, \code{\link{profoundMakeSegimPropagate}}, \code{\link{profoundSegimStats}}, \code{\link{profoundSegimPlot}}, \code{\link{profoundMultiBand}}
 }
 \examples{
 \dontrun{
@@ -278,8 +324,8 @@ image=readFITS(system.file("extdata", 'VIKING/mystery_VIKING_Z.fits', package="P
 
 profound=profoundProFound(image, magzero=30, verbose=TRUE, plot=TRUE)
 
-#You can check to see if the final objects mask is aggressive enough. Notice the halos
-#surrounding bright sources when just using the objects mask.
+# You can check to see if the final objects mask is aggressive enough. Notice the halos
+# surrounding bright sources when just using the objects mask.
 
 temp=image$imDat
 temp[profound$objects>0]=0
@@ -292,6 +338,16 @@ magplot(profound$segstats[,c("R50","SB_N90")], log='x', grid=TRUE)
 magplot(profound$segstats[,c("R50","SB_N90")], log='x', grid=TRUE)
 
 magplot(profound$segstats[,c("flux","origfrac")], log='x', grid=TRUE)
+
+## An example of a large galaxy:
+
+VST_r=readFITS(system.file("extdata", 'VST_r.fits', package="magicaxis"))
+
+# Running on defaults results in the central galaxy subtracting itself:
+plot(profoundProFound(VST_r))
+
+# Setting boxters=2 fixes things nicely:
+plot(profoundProFound(VST_r, boxiters=2))
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

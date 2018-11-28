@@ -12,7 +12,7 @@
 
 <meta name="author" content="Aaron Robotham" />
 
-<meta name="date" content="2018-07-31" />
+<meta name="date" content="2018-11-28" />
 
 <title>ProFound: Colour me happy</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">ProFound: Colour me happy</h1>
 <h4 class="author"><em>Aaron Robotham</em></h4>
-<h4 class="date"><em>2018-07-31</em></h4>
+<h4 class="date"><em>2018-11-28</em></h4>
 
 
 
@@ -84,6 +84,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(ProFound)</code></pre></div>
 <pre><code>## Loading required package: FITSio</code></pre>
 <pre><code>## Loading required package: magicaxis</code></pre>
+<div id="its-a-colourful-life" class="section level2">
+<h2>It’s a Colourful Life</h2>
 <p>One of the big design considerations when developing <strong>ProFound</strong> was to make colour photometry easy and flexible. This vignette will discuss a couple of ways to tackle it.</p>
 <p>First we need some images to do colour photometry on (these are taken from the <strong>ProFound</strong> Robotham et al 2018 paper):</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">VISTA_K=<span class="kw">readFITS</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">'VISTA_K.fits'</span>, <span class="dt">package=</span><span class="st">&quot;magicaxis&quot;</span>))
@@ -103,6 +105,7 @@ pro_NUV=<span class="kw">profoundProFound</span>(GALEX_NUV, <span class="dt">mag
 <span class="kw">plot</span>(pro_r)
 <span class="kw">plot</span>(pro_NUV)</code></pre></div>
 <p>Do not worry too much about the differnce in the source finding, the point really is doing a catalogue match would return weird results for the bright central galaxy because there are such different blind photometry solutions. So we need to enforce some restrictions to get better colour photometry.</p>
+</div>
 <div id="image-pixel-warping" class="section level2">
 <h2>Image Pixel Warping</h2>
 <p>One route is to warp the images onto a common WCS scheme and run <strong>ProFound</strong> in either full segment or bright segment mode. Here we will take the VIKING K-band as our target WCS image.</p>
@@ -129,6 +132,27 @@ pro_NUV_warpK=<span class="kw">profoundProFound</span>(GALEX_NUV_warpK, <span cl
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multi=<span class="kw">profoundMultiBand</span>(<span class="dt">inputlist=</span><span class="kw">list</span>(GALEX_NUV_warpK, VST_r_warpK, VISTA_K), <span class="dt">magzero=</span><span class="kw">c</span>(<span class="fl">20.08</span>,<span class="dv">0</span>,<span class="dv">30</span>), <span class="dt">iters_tot=</span><span class="dv">0</span>, <span class="dt">detectbands=</span><span class="st">'K'</span>, <span class="dt">multibands=</span><span class="kw">c</span>(<span class="st">'NUV'</span>,<span class="st">'r'</span>,<span class="st">'K'</span>))</code></pre></div>
 <p>And we can check they really do compute the same results:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(pro_NUV_warpK<span class="op">$</span>segstats<span class="op">$</span>mag, multi<span class="op">$</span>cat_tot<span class="op">$</span>mag_NUVt, <span class="dt">grid=</span><span class="ot">TRUE</span>)</code></pre></div>
+</div>
+<div id="oher-colour-outputs" class="section level2">
+<h2>Oher Colour Outputs</h2>
+<p>You might have noticed that <strong>profoundMultiBand</strong> mentions measuring three different types of photometry: total photometry, bright isophotal colour photometry and grouped segment photometry. Total photometry uses the dilated total photometry segmentation map, whereas the isophotal photometry only uses the brighter segim_orig (pre-dilation) map. Grouped segment photometry is a bit more complicated- it represents the flux for groups of touching segments (either grouped by touching segim_orig or dilated segim, depending on the ‘groupby’ setting in <strong>profoundMultiBand</strong>). In some cases the groups might represent better photometry, e.g. consider the dilated grouped segments (this is like running with tolerance=Inf):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">profoundSegimPlot</span>(multi<span class="op">$</span>pro_detect<span class="op">$</span>image, multi<span class="op">$</span>pro_detect<span class="op">$</span>group<span class="op">$</span>groupim)</code></pre></div>
+<p>The three catalogues are included in the list output of <strong>profoundMultiBand</strong>, and are named ‘cat_tot’, ‘cat_col’ and ‘cat_grp’. Mostly the grouped photometry will be the same as the total, since mostly things are not touching pre-dilation:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(multi<span class="op">$</span>cat_grp<span class="op">$</span>mag_rg, multi<span class="op">$</span>cat_tot[<span class="kw">match</span>(multi<span class="op">$</span>cat_grp<span class="op">$</span>groupID, multi<span class="op">$</span>cat_tot<span class="op">$</span>segID),<span class="st">&quot;mag_rt&quot;</span>], <span class="dt">grid=</span><span class="ot">TRUE</span>, <span class="dt">log=</span><span class="st">''</span>, <span class="dt">xlab=</span><span class="st">'Group Mag'</span>, <span class="dt">ylab=</span><span class="st">'Total Mag'</span>)
+<span class="kw">abline</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dt">col=</span><span class="st">'red'</span>)</code></pre></div>
+<p>There are two clear outliers, one of which is the central bright source (segment/group ID 1), which in our grouped catalogue has become merged with its neighbouring star (segment ID 3). If we <em>did</em> want to merge this together there is a handy utility function to do so, where ‘groupID_merge’ is a vector of all the groups we prefer over the segmented versions of the photometry (in this case just groupID 1):</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">merge_cat=<span class="kw">profoundCatMerge</span>(<span class="dt">segstats=</span>multi<span class="op">$</span>cat_tot, <span class="dt">groupstats=</span>multi<span class="op">$</span>cat_grp, <span class="dt">groupsegID=</span>multi<span class="op">$</span>pro_detect<span class="op">$</span>group<span class="op">$</span>groupsegID, <span class="dt">groupID_merge=</span><span class="dv">1</span>)
+multi<span class="op">$</span>cat_tot[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>,<span class="kw">c</span>(<span class="st">'segID'</span>, <span class="st">'mag_rt'</span>)]
+multi<span class="op">$</span>cat_grp[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>,<span class="kw">c</span>(<span class="st">'groupID'</span>, <span class="st">'mag_rg'</span>)]
+merge_cat[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>,<span class="kw">c</span>(<span class="st">'segID'</span>, <span class="st">'mag_rt'</span>, <span class="st">'origin'</span>)]</code></pre></div>
+<p>We gain an origin flag in this new catalogue making it clear what the origin of the photometry is (‘group’ for groupstats, or ‘seg’ for segstats). Notice how in the merged catalogue segment ID 3 has been removed, since it is merged in with segment ID 1 to form groupID=1. All this grouping information is stored in the groupsegID object:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multi<span class="op">$</span>pro_detect<span class="op">$</span>group<span class="op">$</span>groupsegID[<span class="dv">1</span>,<span class="st">&quot;segID&quot;</span>][[<span class="dv">1</span>]]</code></pre></div>
+<p>We might also only want to use segments from the colour catalogue that exist in this new merger catalogue. This is easy to do with base <strong>R</strong>:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">merge_cat_col=multi<span class="op">$</span>cat_col[multi<span class="op">$</span>cat_col<span class="op">$</span>segID <span class="op">%in%</span><span class="st"> </span>merge_cat<span class="op">$</span>segID,]</code></pre></div>
+<p>These now both have the same number of rows by construction, and sources will appear on the same row, so we can plot comparisons very easily:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">magplot</span>(merge_cat<span class="op">$</span>mag_rt, merge_cat_col<span class="op">$</span>mag_rc, <span class="dt">xlab=</span><span class="st">'Total Mag'</span>, <span class="dt">ylab=</span><span class="st">'Colour Mag'</span>, <span class="dt">grid=</span><span class="ot">TRUE</span>)
+<span class="kw">abline</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dt">col=</span><span class="st">'red'</span>)</code></pre></div>
+<p>As a note, there is one object that is actually fainter in its dilated total photometry- it is pretty faint, and probably not a good object!</p>
 </div>
 <div id="segmentation-map-warping" class="section level2">
 <h2>Segmentation Map Warping</h2>

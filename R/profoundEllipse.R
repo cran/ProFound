@@ -1,10 +1,32 @@
 .ellipsesd=function(par=c(1,0,0,0), x, y, xcen, ycen, wt=1){
   x=(x-xcen)/par[1]
   y=(y-ycen)/par[1]
-  return=.varwt(x=.profoundEllipse(x=x, y=y, flux=1, xcen=0, ycen=0, ang=par[2], axrat=10^par[3], box=par[4])[,1], xcen=1, wt=wt)
+  invisible(.varwt(x=.profoundEllipse(x=x, y=y, flux=1, xcen=0, ycen=0, ang=par[2], axrat=10^par[3], box=par[4])[,1], xcen=1, wt=wt))
 }
 
-profoundGetEllipse=function(x, y, z, xcen, ycen, scale=sqrt(2), pixscale=1, dobox=FALSE, plot=FALSE, ...){
+.profoundEllipse=function(x, y, flux, xcen=0, ycen=0, ang=0, axrat=1, box=0){
+  if(is.matrix(x)){
+    z=x
+    x = seq(0.5, dim(z)[1] - 0.5)
+    y = seq(0.5, dim(z)[2] - 0.5)
+    temp=expand.grid(x,y)
+    x=temp[,1]
+    y=temp[,2]
+    flux=as.numeric(z)
+  }
+  if(!is.numeric(box)) box = 0
+  rad=sqrt((x-xcen)^2+(y-ycen)^2)
+  angrad=-ang*pi/180
+  angmod=atan2((x-xcen),(y-ycen))-angrad
+  xmod=rad*sin(angmod)
+  ymod=rad*cos(angmod)
+  xmod=xmod/axrat
+  radmod=(abs(xmod)^(2+box)+abs(ymod)^(2+box))^(1/(2+box))
+  output=cbind(rad=radmod, flux=flux)
+  invisible(output)
+}
+
+profoundGetEllipse=function(x, y, z, xcen=NULL, ycen=NULL, scale=sqrt(2), pixscale=1, dobox=FALSE, plot=FALSE, ...){
   if(is.matrix(x)){
     if(dim(x)[2]==3){
       y=x[,2]
@@ -12,8 +34,8 @@ profoundGetEllipse=function(x, y, z, xcen, ycen, scale=sqrt(2), pixscale=1, dobo
       x=x[,1]
     }
   }
-  if(missing(xcen)){xcen=.meanwt(x, wt=z)}
-  if(missing(ycen)){ycen=.meanwt(y, wt=z)}
+  if(is.null(xcen)){xcen=.meanwt(x, wt=z)}
+  if(is.null(ycen)){ycen=.meanwt(y, wt=z)}
   xsd=sqrt(.varwt(x, wt=z))
   ysd=sqrt(.varwt(y, wt=z))
   covxy=.covarwt(x, y, wt=z)
@@ -45,46 +67,53 @@ profoundGetEllipse=function(x, y, z, xcen, ycen, scale=sqrt(2), pixscale=1, dobo
   if(plot){
     profoundDrawEllipse(xcen=xcen, ycen=ycen, rad=rad$hi*scale, axrat=axrat, ang=ang, box=box, ...)
   }
-  return=c(xcen=xcen, ycen=ycen, radhi=rad$hi*scale*pixscale, radlo=rad$lo*scale*pixscale, radav=radav*pixscale, axrat=axrat, ang=ang, box=box, xsd=xsd, ysd=ysd, covxy=covxy, corxy=corxy)
+  invisible(c(xcen=xcen, ycen=ycen, radhi=rad$hi*scale*pixscale, radlo=rad$lo*scale*pixscale, radav=radav*pixscale, axrat=axrat, ang=ang, box=box, xsd=xsd, ysd=ysd, covxy=covxy, corxy=corxy))
 }
 
-profoundGetEllipses=function(image, segim, segID=1, levels=10, magzero=0, pixscale=1, fixcen=TRUE, dobox=FALSE, plot=TRUE, ...){
-  if(missing(segim)){segim=segID}
+profoundGetEllipses=function(image=NULL, segim=NULL, segID=1, levels=10, magzero=0, pixscale=1, fixcen=TRUE, dobox=FALSE, plot=TRUE, ...){
+  if(is.null(segim)){segim=segID}
   tempxy=which(segim==segID, arr.ind = T)-0.5
   tempxy=cbind(tempxy,image[segim==segID])
   tempxy=tempxy[order(tempxy[,3],decreasing = T),]
   tempxy=cbind(tempxy,cumsum(tempxy[,3])/sum(tempxy[,3],na.rm=T))
   tempellipses={}
   segelllipses=matrix(0,dim(segim)[1],dim(segim)[2])
-  isolevels=seq(0,1-1/levels,by=1/levels)
+  if(length(levels)>1){
+    isolevels=levels
+    difflevels=diff(isolevels)
+    levels=length(levels)
+  }else{
+    isolevels=seq(0,1,by=1/levels)
+    difflevels=diff(isolevels)
+  }
   if(fixcen){
     tempellipse=profoundGetEllipse(tempxy[,1:3])
     xcen=as.numeric(tempellipse['xcen'])
     ycen=as.numeric(tempellipse['ycen'])
-    for(i in isolevels){
-      segelllipses[ceiling(tempxy[tempxy[,4]>i & tempxy[,4]<i+1/levels,1:2])]=round(i*levels+1,0)
+    for(i in 1:(length(isolevels)-1)){
+      segelllipses[ceiling(tempxy[tempxy[,4]>isolevels[i] & tempxy[,4]<isolevels[i]+difflevels[i],1:2])]=i
       tempellipses=rbind(tempellipses,
-                        c(profoundGetEllipse(tempxy[tempxy[,4]>i & tempxy[,4]<i+1/levels,1:3], xcen=xcen, ycen=ycen, pixscale=pixscale, dobox=dobox), flux=sum(tempxy[tempxy[,4]>i & tempxy[,4]<i+1/levels,3], na.rm=T), N=length(which(tempxy[,4]>i & tempxy[,4]<i+1/levels)))
+                        c(profoundGetEllipse(tempxy[tempxy[,4]>isolevels[i]  & tempxy[,4]<isolevels[i]+difflevels[i],1:3], xcen=xcen, ycen=ycen, pixscale=pixscale, dobox=dobox), flux=sum(tempxy[tempxy[,4]>isolevels[i]  & tempxy[,4]<isolevels[i]+difflevels[i],3], na.rm=T), N=length(which(tempxy[,4]>isolevels[i] & tempxy[,4]<isolevels[i]+difflevels[i])))
                         )
     }
   }else{
-    for(i in isolevels){
-      segelllipses[ceiling(tempxy[tempxy[,4]>i & tempxy[,4]<i+1/levels,1:2])]=round(i*levels+1,0)
+    for(i in 1:(length(isolevels)-1)){
+      segelllipses[ceiling(tempxy[tempxy[,4]>isolevels[i]  & tempxy[,4]<isolevels[i]+difflevels[i],1:2])]=i
       tempellipses=rbind(tempellipses,
-                        c(profoundGetEllipse(tempxy[tempxy[,4]>i & tempxy[,4]<i+1/levels,1:3], pixscale=pixscale, dobox=dobox), flux=sum(tempxy[tempxy[,4]>i & tempxy[,4]<i+0.05,3], na.rm=T), N=length(which(tempxy[,4]>i & tempxy[,4]<i+1/levels)))
+                        c(profoundGetEllipse(tempxy[tempxy[,4]>isolevels[i]  & tempxy[,4]<isolevels[i]+difflevels[i],1:3], pixscale=pixscale, dobox=dobox), flux=sum(tempxy[tempxy[,4]>isolevels[i] & tempxy[,4]<isolevels[i]+difflevels[i],3], na.rm=T), N=length(which(tempxy[,4]>isolevels[i] & tempxy[,4]<isolevels[i]+difflevels[i])))
                         )
     }
   }
   SB=profoundFlux2SB(tempellipses[,'flux']/tempellipses[,'N'], magzero=magzero, pixscale=pixscale)
-  tempellipses=cbind(segellipseID=1:length(tempellipses[,1]), fluxfrac=isolevels+1/levels, tempellipses, SB=SB)
+  tempellipses=cbind(segellipseID=1:length(tempellipses[,1]), fluxfrac=isolevels[2:length(isolevels)], tempellipses, SB=SB)
   tempellipses=as.data.frame(tempellipses)
   if(plot){
     profoundGetEllipsesPlot(image=image, ellipses=tempellipses, segim=segim, segID=segID, pixscale=pixscale, ...)
   }
-  return=list(ellipses=tempellipses, segellipses=segelllipses)
+  invisible(list(ellipses=tempellipses, segellipses=segelllipses))
 }
 
-profoundGetEllipsesPlot=function(image, ellipses, segim, segID=1, segellipseID='all', pixscale=1, col=rep(rainbow(10,s=0.5),4), border='auto', lty='auto', lwd='auto', ...){
+profoundGetEllipsesPlot=function(image=NULL, ellipses=NULL, segim=NULL, segID=1, segellipseID='all', pixscale=1, col=rep(rainbow(10,s=0.5),4), border='auto', lty='auto', lwd='auto', ...){
   tempcon = magimage(image, col=col, ...)
   if(segellipseID[1]=='all'){segellipseID=1:length(ellipses[,1])}
   for(i in segellipseID){
@@ -109,35 +138,12 @@ profoundGetEllipsesPlot=function(image, ellipses, segim, segID=1, segellipseID='
       if(lty=='auto'){templty=2}else{templty=lty}
       if(lwd=='auto'){templwd=1}else{templwd=lwd}
     }
-    if(!missing(segim)){
+    if(!is.null(segim)){
       tempcon = magimage(1-(segim==segID), add=T, magmap=F, zlim=c(0,1), col=NA)
       contour(tempcon, add=T, drawlabels=F, levels=1, col = "darkgreen")
     }
     profoundDrawEllipse(xcen=ellipses[ellipses$segellipseID==i,'xcen'], ycen=ellipses[ellipses$segellipseID==i,'ycen'], rad=ellipses[ellipses$segellipseID==i,'radhi']/pixscale, axrat=ellipses[ellipses$segellipseID==i,'axrat'], ang=ellipses[ellipses$segellipseID==i,'ang'], box=ellipses[ellipses$segellipseID==i,'box'], col=tempborder, lty=templty, lwd=templwd)
   }
-}
-
-.profoundEllipse=function(x, y, flux, xcen=0, ycen=0, ang=0, axrat=1, box=0){
-  if(is.matrix(x)){
-    z=x
-    x = seq(0.5, dim(z)[1] - 0.5)
-    y = seq(0.5, dim(z)[2] - 0.5)
-    temp=expand.grid(x,y)
-    x=temp[,1]
-    y=temp[,2]
-    flux=as.numeric(z)
-  }
-  if(!is.numeric(box)) box = 0
-  rad=sqrt((x-xcen)^2+(y-ycen)^2)
-  angrad=-ang*pi/180
-  angmod=atan2((x-xcen),(y-ycen))-angrad
-  xmod=rad*sin(angmod)
-  ymod=rad*cos(angmod)
-  xmod=xmod/axrat
-  radmod=(abs(xmod)^(2+box)+abs(ymod)^(2+box))^(1/(2+box))
-  output=cbind(rad=radmod, flux=flux)
-  output=output[order(radmod),]
-  return(output)
 }
 
 profoundDrawEllipse=function(xcen=0, ycen=0, rad=1, axrat=1, ang=0, box=0, ...){
