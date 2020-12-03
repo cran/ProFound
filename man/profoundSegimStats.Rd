@@ -9,11 +9,12 @@ Image Segmentation Statistics
 Basic summary statistics for image segments, e.g. aperture parameters, fluxes and surface brightness estimates. These might provide useful first guesses to ProFit fitting parameters (particularly \option{flux}, \option{axrat} and \option{ang}).
 }
 \usage{
-profoundSegimStats(image = NULL, segim = NULL, mask = NULL, sky = 0, skyRMS = 0,
-magzero = 0, gain = NULL, pixscale = 1, header, sortcol = "segID", decreasing = FALSE,
-rotstats = FALSE, boundstats = FALSE, offset = 1)
-profoundSegimPlot(image = NULL, segim = NULL, mask = NULL, sky = 0, header = NULL,
-col = rainbow(max(segim), end=2/3), profound = NULL, ...)
+profoundSegimStats(image = NULL, segim = NULL, mask = NULL, sky = NULL, skyRMS = NULL,
+magzero = 0, gain = NULL, pixscale = 1, header = NULL, sortcol = "segID",
+decreasing = FALSE, rotstats = FALSE, boundstats = FALSE, offset = 1, cor_err_func = NULL,
+app_diam = 1)
+profoundSegimPlot(image = NULL, segim = NULL, mask = NULL, sky = NULL, header = NULL,
+col = rainbow(max(segim), end=2/3), profound = NULL, add = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -54,7 +55,7 @@ Logical; if FALSE (default) the segmentation statistics data.frame will be sorte
 Logical; if TRUE then the \option{asymm}, \option{flux_reflect} and \option{mag_reflect} are computed, else they are set to NA. This is because they are very expensive to compute compared to other photometric properties.
 }
   \item{boundstats}{
-Logical; if TRUE then various pixel boundary statistics are computed (\option{Nedge}, \option{Nsky}, \option{Nobject}, \option{Nborder}, \option{edge_frac}, \option{edge_excess} and \option{FlagBorder}). If FALSE these return NA instead (saving computation time).
+Logical; if TRUE then various pixel boundary statistics are computed (\option{Nedge}, \option{Nsky}, \option{Nobject}, \option{Nborder} \option{Nmask}, \option{edge_frac}, \option{edge_excess} and \option{FlagBorder}). If FALSE these return NA instead (saving computation time). Note by construction \option{Nedge} = \option{Nobject} + \option{Nsky} + \option{Nborder}. If you want to adjust specifically for \option{Nmask} then \option{Nsky} = \option{Nsky} - \option{Nmask}.
 }
   \item{offset}{
 Integer scalar; the distance to offset when searching for nearby segments.  
@@ -64,6 +65,15 @@ Colour palette; the colours to map the segment IDs against. This is by default t
 }
   \item{profound}{
 List; object of class 'profound'. If this is provided then missing input arguments are taking directly from this structure. As an added convenience, you can assign the profound object directly to the \option{image} input.
+}
+  \item{cor_err_func}{
+Function; the error function between \option{N100} (the number of pixels in the segment) and the relative flux error. Most likely the \option{cor_err_func} output of \code{\link{profoundPixelCorrelation}}.
+}
+  \item{app_diam}{
+Numeric scalar; the diameter in arc seconds to use for pseudo aperture photometry. This will use the appropriate pixel scale to convert the aperture into image units. The psuedo aperture photometry is output to columns \option{flux_app} and \option{mag_app} in \option{segstats}.
+}
+  \item{add}{
+Logical; should just the segment contours be added to the current image? This allows for complex colouring of different segments to be achieved by adding various overlays.  
 }
   \item{\dots}{
 Further arguments to be passed to \code{\link{magimage}}.
@@ -92,6 +102,8 @@ A data.frame with columns:
   \item{sep}{Radial offset between the cen and max definition of the centre (units of \option{pixscale}, so if \option{pixscale} represents the standard asec/pix this will be asec)}
   \item{flux}{Total flux (calculated using \option{image}-\option{sky}) in ADUs}
   \item{mag}{Total flux converted to mag using \option{magzero}}
+  \item{flux_app}{Pseudo aperture (as specified by \option{Napp}) flux (calculated using \option{image}-\option{sky}) in ADUs or Jansky}
+  \item{mag_app}{Pseudo aperture (as specified by \option{Napp}) flux converted to mag using \option{magzero}}
   \item{cenfrac}{Fraction of flux in the brightest pixel}
   \item{N50}{Number of brightest pixels containing 50\% of the flux}
   \item{N90}{Number of brightest pixels containing 90\% of the flux}
@@ -121,6 +133,7 @@ A data.frame with columns:
   \item{flux_err_sky}{Sky subtraction component of the flux error}
   \item{flux_err_skyRMS}{Sky RMS component of the flux error}
   \item{flux_err_shot}{Object shot-noise component of the flux error (only if \option{gain} is provided)}
+  \item{flux_err_cor}{Error component due to pixel correlation}
   \item{sky_mean}{Mean flux of the sky over all segment pixels}
   \item{sky_sum}{Total flux of the sky over all segment pixels}
   \item{skyRMS_mean}{Mean value of the sky RMS over all segment pixels}
@@ -129,7 +142,7 @@ A data.frame with columns:
   \item{Nobject}{Number of edge segment pixels that are touching another object segment}
   \item{Nborder}{Number of edge segment pixels that are touching the \option{image} border}
   \item{Nmask}{Number of edge segment pixels that are touching a masked pixel (note NAs in \option{image} are also treated as masked pixels)}
-  \item{edge_frac}{Fraction of edge segment pixels that are touching the sky i.e. \option{Nsky}\option{Nedge}, higher generally meaning more robust segmentation statistics}
+  \item{edge_frac}{Fraction of edge segment pixels that are touching the sky i.e. \option{Nsky}/\option{Nedge}, higher generally meaning more robust segmentation statistics}
   \item{edge_excess}{Ratio of the number of edge pixels to the expected number given the elliptical geometry measurements of the segment. If this is larger than 1 then it is a sign that the segment geometry is irregular, and is likely a flag for compromised photometry}
   \item{flag_border}{A binary flag telling the user which \option{image} borders the segment touches. The bottom of the \option{image} is flagged 1, left=2, top=4 and right=8. A summed combination of these flags indicate the segment is in a corner touching two borders: bottom-left=3, top-left=6, top-right=12, bottom-right=9.}
   
@@ -161,4 +174,4 @@ profoundSegimPlot(image, profound$segim)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ segmentation }% use one of  RShowDoc("KEYWORDS")
+\concept{ segmentation }% use one of  RShowDoc("KEYWORDS")

@@ -33,7 +33,7 @@ profoundSB2Flux=function(SB=0, magzero=0, pixscale=1){
 
 profoundImBlur=function(image=NULL, sigma=1, plot=FALSE, ...){
   if(requireNamespace("imager", quietly = TRUE)){
-    output=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+    output=as.matrix(imager::isoblur(imager::as.cimg(image),sigma,na.rm=TRUE))
   }else{
     if(!requireNamespace("EBImage", quietly = TRUE)){
       stop('The imager or EBImage package is needed for the profoundImBlur function to work. Please install from CRAN.', call. = FALSE)
@@ -51,7 +51,7 @@ profoundImGrad=function(image=NULL, sigma=1, plot=FALSE, ...){
   if(!requireNamespace("imager", quietly = TRUE)){
     stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
   }
-  output=as.matrix(imager::enorm(imager::imgradient(imager::isoblur(imager::as.cimg(image),sigma), "xy")))
+  output=as.matrix(imager::enorm(imager::imgradient(imager::isoblur(imager::as.cimg(image),sigma,na.rm=TRUE), "xy")))
   if(plot){
     magimage(output, ...)
   }
@@ -62,7 +62,7 @@ profoundImDiff=function(image=NULL,sigma=1, plot=FALSE, ...){
   if(!requireNamespace("imager", quietly = TRUE)){
     stop('The imager package is needed for this function to work. Please install it from CRAN.', call. = FALSE)
   }
-  blur=as.matrix(imager::isoblur(imager::as.cimg(image),sigma))
+  blur=as.matrix(imager::isoblur(imager::as.cimg(image),sigma,na.rm=TRUE))
   output=image-blur
   if(plot){
     magimage(output, ...)
@@ -169,145 +169,252 @@ profoundCatMerge=function(segstats=NULL, groupstats=NULL, groupsegID=NULL, group
   invisible(segstats)
 }
 
-profoundFluxDeblend=function(image=NULL, segim=NULL, segstats=NULL, groupim=NULL, groupsegID=NULL, magzero=0, df=3, radtrunc=2, iterative=FALSE, doallstats=TRUE){
-  if(class(image)=='profound'){
-    if(is.null(segim)){segim=image$segim}
-    if(is.null(segstats)){segstats=image$segstats}
-    if(is.null(groupim)){groupim=image$group$groupim}
-    if(is.null(groupsegID)){groupsegID=image$group$groupsegID}
-    if(is.null(magzero)){magzero=image$magzero}
-    image=image$image-image$sky
-  }
-  groupsegID=groupsegID[groupsegID$Ngroup>1,,drop=FALSE]
-  output=data.frame(groupID=rep(groupsegID$groupID,groupsegID$Ngroup), segID=unlist(groupsegID$segID), flux_db=NA, mag_db=NA, N100_db=NA)
-  if(iterative){
-    output[,"flux_db"]=segstats[match(output$segID, segstats$segID),"flux"]
-    output=output[order(output[,"groupID"],-output[,"flux_db"]),]
-  }
-  Npad=1
-  image_temp=image
-  for(i in 1:dim(groupsegID)[1]){
-    Ngroup=groupsegID[i,"Ngroup"]
-    segIDlist=output[output[,'groupID']==groupsegID[i,"groupID"],"segID"]
-    segIDlist=segIDlist[segIDlist>0]
+profoundResample=function(image, pixscale_old=1, pixscale_new=1, type='bicubic', fluxscale='image', recentre=FALSE){
+  #xseq = 1:dim(image)[1]-dim(image)[1]/2-0.5
+  #yseq = 1:dim(image)[2]-dim(image)[2]/2-0.5
   
-    tempgridgroup=which(groupim==groupsegID[i,"groupID"], arr.ind=TRUE)
-    weightmatrix=matrix(0,length(tempgridgroup[,1]),length(segIDlist))
+  relscale = pixscale_new/pixscale_old
+  
+  # xout = seq(relscale,xseq[length(xseq)],by=relscale)
+  # xout = c(-rev(xout),0,xout)
+  # yout = seq(relscale,yseq[length(yseq)],by=relscale)
+  # yout = c(-rev(yout),0,yout)
+  # bigrid = expand.grid(xout,yout)
+  xin = (1:(dim(image)[1]/2)) * relscale
+  xin = c(-rev(xin),0,xin) + dim(image)[1] * relscale/2
+
+  yin = (1:(dim(image)[2]/2)) * relscale
+  yin = c(-rev(yin),0,yin) + dim(image)[2] * relscale/2
+  
+  output = matrix(0,dim(image)[1] * relscale, dim(image)[2] * relscale)
+  
+  if(type=='bilinear'){
+    .interpolateLinearGrid(xin, yin, image, output)
+  }else if(type=='bicubic'){
+    .interpolateAkimaGrid(xin, yin, image, output)
+  }else{
+    stop('type must be one of bilinear / bicubic !')
+  }
+  
+  # if(type=='bilinear'){
+  #   output[]=.interp.2d(bigrid[,1], bigrid[,2], list(x=xseq, y=yseq, z=image))
+  # }else if(type=='bicubic'){
+  #   if(!requireNamespace("akima", quietly = TRUE)){
+  #     stop('The akima package is needed for bicubic interpolation to work. Please install it from CRAN.', call. = FALSE)
+  #   }
+  #   output[]=akima::bicubic(xseq, yseq, image,bigrid[,1], bigrid[,2])$z
+  # }else{
+  #   stop('type must be one of bilinear / bicubic !')
+  # }
+  
+  if(recentre){
+    bigrid = expand.grid(1:dim(output)[1]-0.5,1:dim(output)[2]-0.5)
+    maxloc = as.numeric(bigrid[which.max(output),])
+    xin = xin - maxloc[1] + dim(output)[1]/2
+    yin = yin - maxloc[2] + dim(output)[2]/2
+    #bigrid=expand.grid(xout,yout)
     
-    for(i in 1:length(segIDlist)){
-      tempgridseg=which(segim[tempgridgroup]==segIDlist[i])
-  
-      groupout=.profoundEllipse(x=tempgridgroup[,1],y=tempgridgroup[,2],flux=image_temp[tempgridgroup],xcen=segstats[segstats$segID==segIDlist[i],"xmax"]+0.5,ycen=segstats[segstats$segID==segIDlist[i],"ymax"]+0.5,ang=segstats[segstats$segID==segIDlist[i],"ang"],axrat=segstats[segstats$segID==segIDlist[i],"axrat"])
-      segout=.profoundEllipse(x=tempgridgroup[tempgridseg,1],y=tempgridgroup[tempgridseg,2],flux=image_temp[tempgridgroup[tempgridseg,]],xcen=segstats[segstats$segID==segIDlist[i],"xmax"]+0.5,ycen=segstats[segstats$segID==segIDlist[i],"ymax"]+0.5,ang=segstats[segstats$segID==segIDlist[i],"ang"],axrat=segstats[segstats$segID==segIDlist[i],"axrat"])
-    #tempspline=smooth.spline(segout[segout[,2]>0,1],log10(segout[segout[,2]>0,2]), df=df)
-      select=which(segout[,2]>0)
-      if(length(unique(segout[select,1]))>df){
-        weightmatrix[,i]=10^predict(smooth.spline(segout[select,1],log10(segout[select,2]), df=df)$fit, groupout[,1])$y
-        weightmatrix[groupout[,1]>radtrunc*max(segout[,1]),i]=0
-      }else{
-        weightmatrix[,i]=0
-      }
-      if(iterative){
-        image_temp[tempgridgroup]=image_temp[tempgridgroup]-weightmatrix[,i]
-      }
+    if(type=='bilinear'){
+      .interpolateLinearGrid(xin, xin, image, output)
+    }else if(type=='bicubic'){
+      .interpolateAkimaGrid(yin, yin, image, output)
     }
-    weightmatrix=weightmatrix/.rowSums(weightmatrix, dim(weightmatrix)[1], dim(weightmatrix)[2])
-    output[Npad:(Npad+Ngroup-1),"flux_db"]=.colSums(weightmatrix*image[tempgridgroup], dim(weightmatrix)[1], dim(weightmatrix)[2])
-    output[Npad:(Npad+Ngroup-1),"N100_db"]=.colSums(weightmatrix, dim(weightmatrix)[1], dim(weightmatrix)[2])
-    Npad=Npad+Ngroup
-  }
-  output[,"mag_db"]=profoundFlux2Mag(flux=output[,'flux_db'], magzero=magzero)
-  
-  if(doallstats){
-    output=output[match(segstats$segID,output$segID),]
-    output[is.na(output[,"flux_db"]),c("segID", "flux_db", "mag_db", "N100_db")]=segstats[is.na(output[,"flux_db"]),c("segID", "flux","mag","N100")]
-    output=cbind(output, flux_err_sky_db=segstats[,"flux_err_sky"]*sqrt(output[,'N100_db']/segstats[,'N100']))
-    output=cbind(output, flux_err_skyRMS_db=segstats[,"flux_err_skyRMS"]*sqrt(output[,'N100_db']/segstats[,'N100']))
-    output=cbind(output, flux_err_shot_db=segstats[,"flux_err_shot"]*suppressWarnings(sqrt(output[,'flux_db']/segstats[,'flux'])))
-    output=cbind(output, flux_err_db=sqrt(output[,'flux_err_sky_db']^2+output[,'flux_err_skyRMS_db']^2+output[,'flux_err_shot_db']^2))
-    output=cbind(output, mag_err_db=(2.5/log(10))*abs(output[,'flux_err_db']/output[,'flux_db']))
-  }else if(iterative){
-    output=output[order(output[,'groupID'],output[,'segID']),]
+    
+    # if(type=='bilinear'){
+    #   output[]=.interp.2d(bigrid[,1], bigrid[,2], list(x=xseq, y=yseq, z=image))
+    # }else{
+    #   output[]=akima::bicubic(xseq, yseq, image,bigrid[,1], bigrid[,2])$z
+    # }
   }
   
-  invisible(output)
+  if(fluxscale == 'image'){
+    output = output*sum(image)/sum(output)
+  }else if(fluxscale == 'pixscale'){
+    output = output*relscale^2
+  }else if(fluxscale == 'norm'){
+    output = output/sum(output)
+  }else{
+    stop('fluxscale must be one of image / pixscale / norm !')
+  }
+  
+  return(invisible(output))
 }
 
-### Deprecated Functions ###
 
-# profoundGetPixScale=function(header, CD1_1=1, CD1_2=0, CD2_1=0, CD2_2=1){
-#   if(!is.null(header)){
-#     if(is.data.frame(header) | is.matrix(header)){
-#       locs=match(c('CD1_1','CD1_2','CD2_1','CD2_2'),header[,1])
-#       headerWCS=data.frame(header[locs,1],as.numeric(header[locs,2]))
-#       if('CD1_1' %in% headerWCS[,1]){
-#         CD1_1=headerWCS[headerWCS[,1]=='CD1_1',2]
-#         if('CD1_2' %in% headerWCS[,1]){CD1_2=headerWCS[headerWCS[,1]=='CD1_2',2]}else{message('Missing CD1_2')}
-#       }else{
-#         if('CDELT1' %in% headerWCS[,1]){
-#           CD1_1=headerWCS[headerWCS[,1]=='CDELT1',2]
-#         }else{
-#           message("Missing CD1_1 and CDELT1")
-#         }
-#       }
-#       if('CD2_2' %in% headerWCS[,1]){
-#         CD2_2=headerWCS[headerWCS[,1]=='CD2_2',2]
-#         if('CD2_1' %in% headerWCS[,1]){CD2_1=headerWCS[headerWCS[,1]=='CD2_1',2]}else{message('Missing CD2_1')}
-#       }else{
-#         if('CDELT2' %in% headerWCS[,1]){
-#           CD2_2=headerWCS[headerWCS[,1]=='CDELT2',2]
-#         }else{
-#           message("Missing CD2_2 and CDELT2")
-#         }
-#       }
-#     }else{
-#       if('CD1_1' %in% header){
-#         CD1_1=as.numeric(header[which(header=='CD1_1')+1])
-#         if('CD1_2' %in% header){CD1_2=as.numeric(header[which(header=='CD1_2')+1])}else{message('Missing CD1_2')}
-#       }else{
-#         if('CDELT1' %in% header){
-#           CD1_1=as.numeric(header[which(header=='CDELT1')+1])
-#         }else{
-#           message("Missing CD1_1 and CDELT1")
-#         }
-#       }
-#       if('CD2_2' %in% header){
-#         CD2_2=as.numeric(header[which(header=='CD2_2')+1])
-#         if('CD2_1' %in% header){CD2_1=as.numeric(header[which(header=='CD2_1')+1])}else{message('Missing CD2_1')}
-#       }else{
-#         if('CDELT1' %in% header){
-#           CD2_2=as.numeric(header[which(header=='CDELT2')+1])
-#         }else{
-#           message("Missing CD2_2 and CDELT2")
-#         }
-#       }
-#     }
-#   }
-#   return(3600*(sqrt(CD1_1^2+CD1_2^2)+sqrt(CD2_1^2+CD2_2^2))/2)
-# }
+# Hidden utility functions
 
-# profoundInterp2d=function(x,y,image){
-#     scale=sum(image)
-#     imagelist=list(x=seq(-dim(image)[1]/2,dim(image)[1]/2,len=dim(image)[1]),y=seq(-dim(image)[2]/2,dim(image)[2]/2,len=dim(image)[2]),z=image)
-#     ximage = seq(-dim(image)[1]/2,dim(image)[1]/2,len=dim(image)[1])
-#     yimage = seq(-dim(image)[2]/2,dim(image)[2]/2,len=dim(image)[2])
-#     zimage = image
-#     nx = length(ximage)
-#     ny = length(yimage)
-#     lx = approx(ximage, 1:nx, x, rule=2)$y
-#     ly = approx(yimage, 1:ny, y, rule=2)$y
-#     lx1 = floor(lx)
-#     ly1 = floor(ly)
-#     ex = lx - lx1
-#     ey = ly - ly1
-#     ex[lx1 == nx] = 1
-#     ey[ly1 == ny] = 1
-#     lx1[lx1 == nx] = nx - 1
-#     ly1[ly1 == ny] = ny - 1
-#     z=
-# 	zimage[cbind(lx1, ly1)] * (1 - ex) * (1 - ey) +
-# 	zimage[cbind(lx1 + 1, ly1)] * ex * (1 - ey) +
-# 	zimage[cbind(lx1, ly1 + 1)] * (1 - ex) * ey +
-# 	zimage[cbind(lx1 + 1, ly1 + 1)] * ex * ey
-#   return = cbind(X=x,Y=y,Z=z)
-# }
+.interp.2d=function(x, y, obj){
+    xobj = obj$x
+    yobj = obj$y
+    zobj = obj$z
+    nx = length(xobj)
+    ny = length(yobj)
+    lx = approx(xobj, 1:nx, x, rule = 2)$y
+    rm(x)
+    ly = approx(yobj, 1:ny, y, rule = 2)$y
+    rm(y)
+    lx1 = floor(lx)
+    ly1 = floor(ly)
+    ex = lx - lx1
+    rm(lx)
+    ey = ly - ly1
+    rm(ly)
+    ex[lx1 == nx] = 1
+    ey[ly1 == ny] = 1
+    lx1[lx1 == nx] = nx - 1
+    ly1[ly1 == ny] = ny - 1
+    temp=rep(0,length(lx1))
+    temp=zobj[cbind(lx1, ly1)] * (1 - ex) * (1 - ey)
+    temp=temp+zobj[cbind(lx1 + 1, ly1)] * ex * (1 - ey)
+    temp=temp+zobj[cbind(lx1, ly1 + 1)] * (1 - ex) * ey
+    temp=temp+zobj[cbind(lx1 + 1, ly1 + 1)] * ex * ey
+    invisible(temp)
+}
+
+.genPointSource = function(xcen=50, ycen=50, flux=1, psf, dim=c(100,100)){
+  dimpsf = dim(psf)
+  psfcen=dim(psf)/2
+  
+  image=matrix(0,dim[1],dim[2])
+  
+  for(i in 1:length(xcen)){
+    x_off = (xcen[i] - psfcen[1])
+    pixshift_x = floor(x_off)
+    x_off = 1L - (x_off - pixshift_x)
+    
+    y_off = (ycen[i] - psfcen[2])
+    pixshift_y = floor(y_off)
+    y_off = 1L - (y_off - pixshift_y)
+    
+    left_bottom = x_off * y_off
+    left_top = x_off * (1-y_off)
+    right_bottom = (1-x_off) * y_off
+    right_top = (1-x_off) * (1-y_off)
+    
+    xpix_left = 1:dimpsf[1] + pixshift_x
+    inim_xpix_left = xpix_left >= 1 & xpix_left <= dim[1]
+    xpix_right = xpix_left + 1L
+    inim_xpix_right = xpix_right >= 1 & xpix_right <= dim[1]
+    
+    ypix_bottom = 1:dimpsf[2] + pixshift_y
+    inim_ypix_bottom = ypix_bottom >= 1 & ypix_bottom <= dim[2]
+    ypix_top = ypix_bottom + 1L
+    inim_ypix_top = ypix_top >= 1 & ypix_top <= dim[2]
+    
+    dobottom = any(inim_ypix_bottom)
+    doleft = any(inim_xpix_left)
+    dotop = any(inim_ypix_top)
+    doright = any(inim_xpix_right)
+    
+    if(dobottom & doleft & left_bottom>0){
+      image = .addmat_cpp(
+        image,
+        psf[(1:dimpsf[1])[inim_xpix_left], (1:dimpsf[2])[inim_ypix_bottom]] * left_bottom * flux[i],
+        range(xpix_left[inim_xpix_left]),
+        range(ypix_bottom[inim_ypix_bottom])
+      )
+      #image[xpix_left[inim_xpix_left],ypix_bottom[inim_ypix_bottom]] = 
+        #image[xpix_left[inim_xpix_left],ypix_bottom[inim_ypix_bottom]] + psf[(1:dimpsf[1])[inim_xpix_left], (1:dimpsf[2])[inim_ypix_bottom]] * left_bottom * flux[i]
+    }
+    
+    if(dotop & doleft & left_top>0){
+      image = .addmat_cpp(
+        image,
+        psf[(1:dimpsf[1])[inim_xpix_left], (1:dimpsf[2])[inim_ypix_top]] * left_top * flux[i],
+        range(xpix_left[inim_xpix_left]),
+        range(ypix_top[inim_ypix_top])
+      )
+      #image[xpix_left[inim_xpix_left],ypix_top[inim_ypix_top]] =
+        #image[xpix_left[inim_xpix_left],ypix_top[inim_ypix_top]] + psf[(1:dimpsf[1])[inim_xpix_left], (1:dimpsf[2])[inim_ypix_top]] * left_top * flux[i]
+    }
+    
+    if(dobottom & doright & right_bottom>0){
+      image = .addmat_cpp(
+        image,
+        psf[(1:dimpsf[1])[inim_xpix_right], (1:dimpsf[2])[inim_ypix_bottom]] * right_bottom * flux[i],
+        range(xpix_right[inim_xpix_right]),
+        range(ypix_bottom[inim_ypix_bottom])
+      )
+      #image[xpix_right[inim_xpix_right],ypix_bottom[inim_ypix_bottom]] = 
+        #image[xpix_right[inim_xpix_right],ypix_bottom[inim_ypix_bottom]] + psf[(1:dimpsf[1])[inim_xpix_right], (1:dimpsf[2])[inim_ypix_bottom]] * right_bottom * flux[i]
+    }
+    
+    if(dotop & doright & right_top>0){
+      image = .addmat_cpp(
+        image,
+        psf[(1:dimpsf[1])[inim_xpix_right], (1:dimpsf[2])[inim_ypix_top]] * right_top * flux[i],
+        range(xpix_right[inim_xpix_right]),
+        range(ypix_top[inim_ypix_top])
+      )
+      #image[xpix_right[inim_xpix_right],ypix_top[inim_ypix_top]] =
+        #image[xpix_right[inim_xpix_right],ypix_top[inim_ypix_top]] + psf[(1:dimpsf[1])[inim_xpix_right], (1:dimpsf[2])[inim_ypix_top]] * right_top * flux[i]
+    }
+  }
+  return(invisible(image))
+}
+
+.makeBrush = function(size, shape=c('box', 'disc', 'diamond', 'Gaussian', 'line'), step=TRUE, sigma=0.3, angle=45) {
+  #This is a direct port of EBImage::makeBrush. This reduces code dependencies, and EBImage does not appear to be well maintained.
+  if(! (is.numeric(size) && (length(size)==1L) && (size>=1)) ) stop("'size' must be an odd integer.")
+  shape = match.arg(arg = tolower(shape), choices = c('box', 'disc', 'diamond', 'gaussian', 'line'))
+  
+  if(size %% 2 == 0){
+    size = size + 1
+    warning(paste("'size' was rounded to the next odd number: ", size))
+  }
+  
+  if (shape=='box') z = matrix(1L, size, size)
+  else if (shape == 'line') {
+    angle = angle %% 180
+    angle.radians = angle * pi / 180;
+    tg = tan(angle.radians)
+    sizeh = (size-1)/2
+    if ( angle < 45 || angle > 135) {
+      z.x = sizeh
+      z.y = round(sizeh*tg)
+    }
+    else {
+      z.y = sizeh
+      z.x = round(sizeh/tg)
+    }
+    z = array(0L, dim=2*c(z.x, z.y)+1);
+    for (i in -sizeh:sizeh) {
+      if ( angle < 45 || angle > 135) {
+        ## scan horizontally
+        i.x = i
+        i.y = round(i*tg)
+      }
+      else {
+        ## scan vertically
+        i.y = i
+        i.x = round(i/tg) 
+      }
+      z[i.x+z.x+1, i.y+z.y+1] = 1L
+    }
+  }
+  else if (shape=='gaussian') {
+    x = seq(-(size-1)/2, (size-1)/2, length=size)
+    x = matrix(x, size, size)
+    z = exp(- (x^2 + t(x)^2) / (2*sigma^2))
+    z = z / sum(z)
+  } else {
+    ## pixel center coordinates
+    x = 1:size -((size+1)/2)
+    
+    ## for each pixel, compute the distance from its center to the origin, using L1 norm ('diamond') or L2 norm ('disc')
+    if (shape=='disc') {
+      z = outer(x, x, FUN=function(X,Y) (X*X+Y*Y))
+      mz = (size/2)^2
+      z = (mz - z)/mz
+      z = sqrt(ifelse(z>0, z, 0))
+    } else {
+      z = outer(x, x, FUN=function(X,Y) (abs(X)+abs(Y)))
+      mz = (size/2)
+      z = (mz - z)/mz
+      z = ifelse(z>0, z, 0)
+    }
+    
+    if (step) z = ifelse(z>0, 1L, 0L)
+  }
+  z
+}

@@ -5,14 +5,14 @@
 Watershed Image Segmentation
 }
 \description{
-A high level utility to achieve decent quality image segmentation. It uses a mixture of image smoothing and watershed segmentation propagation to identify distinct objects for use in, e.g., \code{profitSetupData} (where the \option{segim} list item output of \code{profoundMakeSegim} would be passed to the \option{segim} input of \code{profitSetupData}).
+A mid level utility to achieve decent quality image segmentation. It uses a mixture of image smoothing and watershed segmentation propagation to identify distinct objects for use in, e.g., \code{profitSetupData} (where the \option{segim} list item output of \code{profoundMakeSegim} would be passed to the \option{segim} input of \code{profitSetupData}). For most user cases, people should use the higher level \code{\link{profoundProFound}} function.
 }
 \usage{
 profoundMakeSegim(image = NULL, mask = NULL, objects = NULL, skycut = 1, pixcut = 3,
 tolerance = 4, ext = 2, reltol = 0, cliptol = Inf, sigma = 1, smooth = TRUE, SBlim = NULL,
 magzero = 0, gain = NULL, pixscale = 1, sky = NULL, skyRMS = NULL, header = NULL,
 verbose = FALSE, plot = FALSE, stats = TRUE, rotstats = FALSE, boundstats = FALSE,
-offset = 1, sortcol = "segID", decreasing = FALSE, watershed = 'EBImage', ...)
+offset = 1, sortcol = "segID", decreasing = FALSE, watershed = 'ProFound', ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,7 +38,7 @@ Numeric scalar; the minimum height of the object in the units of sky RMS between
 Numeric scalar; radius of the neighbourhood in pixels for the detection of neighbouring objects. Higher value smooths out small objects.
 }
   \item{reltol}{
-Numeric scalar; only relevant for \option{watershed}='ProFound'. A modifier to the \option{abstol}, modifying it by the ratio of the segment peak flux divided by the saddle point flux to the power \option{reltol}. The default means the \option{reltol} has no effect since this modifier becomes 1. A larger value of \option{reltol} means segments are more aggressively merged together.
+Numeric scalar; only relevant for \option{watershed}='ProFound'. A modifier to the \option{tolerance}, modifying it by the ratio of the segment peak flux divided by the saddle point flux to the power \option{reltol}. The default means the \option{reltol} has no effect since this modifier becomes 1. A larger value of \option{reltol} means segments are more aggressively merged together.
 }
   \item{cliptol}{
 Numeric scalar; only relevant for \option{watershed}='ProFound'. If (\option{image}-\option{sky})/option{skyRMS} is above this level where segments touch then they are always merged, regardless of other criteria. When thinking in terms of sky RMS, values between 20-100 are probably appropriate for merging very bright parts of stars back together in optical data.
@@ -62,7 +62,7 @@ Numeric scalar; the gain (in photo-electrons per ADU). This is only used to comp
   Numeric scalar; the pixel scale, where pixscale=asec/pix (e.g. 0.4 for SDSS). If set to 1 (default), then the output is in terms of pixels, otherwise it is in arcseconds. If provided along with \option{magzero} then the flux and surface brightness outputs will represent magnitudes and mag/asec^2.
 }
   \item{sky}{
-User provided estimate of the absolute sky level. If this is not provided then it will be computed internally using \code{\link{profoundSkyEst}}. Can be a scalar (value uniformly applied to full \option{sigma} map) or a matrix matching the dimensions of \option{image} (allows values to vary per pixel). This will be subtracted off the \option{image} internally, so only provide this if the sky does need to be subtracted!
+User provided estimate of the absolute sky level. If this is not provided then it will be computed internally using \code{\link{profoundSkyEst}}. Can be a scalar (value uniformly applied) or a matrix matching the dimensions of \option{image} (allows values to vary per pixel). This will be subtracted off the \option{image} internally, so only provide this if the sky does need to be subtracted!
 }
   \item{skyRMS}{
 User provided estimate of the RMS of the sky. If this is not provided then it will be computed internally using \code{\link{profoundSkyEst}}. Can be a scalar (value uniformly applied to full \option{sigma} map) or a matrix matching the dimensions of \option{image} (allows values to vary per pixel).
@@ -121,64 +121,9 @@ A list containing:
   \item{skyRMS}{The estimated sky RMS of the \option{image}.}
   \item{segstats}{If \option{stats}=TRUE this is a data.frame (see below), otherwise NULL.}
   \item{header}{The header provided, if missing this is NULL.}
-  \item{SBlim}{The surface brightness limit of detected objects (requires at least \option{magzero} to be provided and \option{skycut}>0, else NULL).}
   \item{call}{The original function call.}
   
-If \option{stats}=TRUE then the function \code{\link{profoundSegimStats}} is called and the \option{segstats} part of the returned list will contain a data.frame with columns (else NULL):
-
-  \item{segID}{Segmentation ID, which can be matched against values in \option{segim}}
-  \item{uniqueID}{Unique ID, which is fairly static and based on the xmax and ymax position}
-  \item{xcen}{Flux weighted x centre}
-  \item{ycen}{Flux weighted y centre}
-  \item{xmax}{x position of maximum flux}
-  \item{ymax}{y position of maximum flux}
-  \item{RAcen}{Flux weighted degrees Right Ascension centre (only present if a \option{header} is provided)}
-  \item{Deccen}{Flux weighted degrees Declination centre (only present if a \option{header} is provided)}
-  \item{RAmax}{Right Ascension of maximum flux (only present if a \option{header} is provided)}
-  \item{Decmax}{Declination of maximum flux (only present if a \option{header} is provided)}
-  \item{sep}{Radial offset between the cen and max definition of the centre (units of \option{pixscale}, so if \option{pixscale} represents the standard asec/pix this will be asec)}
-  \item{flux}{Total flux (calculated using \option{image}-\option{sky}) in ADUs}
-  \item{mag}{Total flux converted to mag using \option{magzero}}
-  \item{cenfrac}{Fraction of flux in the brightest pixel}
-  \item{N50}{Number of brightest pixels containing 50\% of the flux}
-  \item{N90}{Number of brightest pixels containing 90\% of the flux}
-  \item{N100}{Total number of pixels in this segment, i.e. contains 100\% of the flux}
-  \item{R50}{Approximate elliptical semi-major axis containing 50\% of the flux (units of \option{pixscale}, so if \option{pixscale} represents the standard asec/pix this will be asec)}
-  \item{R90}{Approximate elliptical semi-major axis containing 90\% of the flux (units of \option{pixscale}, so if \option{pixscale} represents the standard asec/pix this will be asec)}
-  \item{R100}{Approximate elliptical semi-major axis containing 100\% of the flux (units of \option{pixscale}, so if \option{pixscale} represents the standard asec/pix this will be asec)}
-  \item{SB_N50}{Mean surface brightness containing brightest 50\% of the flux, calculated as \option{flux}*0.5/\option{N50} (if \option{pixscale} has been set correctly then this column will represent mag/asec^2. Otherwise it will be mag/pix^2)}
-  \item{SB_N90}{Mean surface brightness containing brightest 90\% of the flux, calculated as \option{flux}*0.9/\option{N90} (if \option{pixscale} has been set correctly then this column will represent mag/asec^2. Otherwise it will be mag/pix^2)}
-  \item{SB_N100}{Mean surface brightness containing all of the flux, calculated as \option{flux}/\option{N100} (if \option{pixscale} has been set correctly then this column will represent mag/asec^2. Otherwise it will be mag/pix^2)}
-  \item{xsd}{Weighted standard deviation in x (always in units of pix)}
-  \item{ysd}{Weighted standard deviation in y (always in units of pix)}
-  \item{covxy}{Weighted covariance in xy (always in units of pix)}
-  \item{corxy}{Weighted correlation in xy (always in units of pix)}
-  \item{con}{Concentration, \option{R50}/\option{R90}}
-  \item{asymm}{180 degree flux asymmetry (0-1, where 0 is perfect symmetry and 1 complete asymmetry)}
-  \item{flux_reflect}{Flux corrected for asymmetry by doubling the contribution of flux for asymmetric pixels (defined as no matching segment pixel found when the segment is rotated through 180 degrees)}
-  \item{mag_reflect}{\option{flux_reflect} converted to mag using \option{magzero}}
-  \item{semimaj}{Weighted standard deviation along the major axis, i.e. the semi-major first moment, so ~2 times this would be a typical major axis Kron radius (always in units of pix)}
-  \item{semimin}{Weighted standard deviation along the minor axis, i.e. the semi-minor first moment, so ~2 times this would be a typical minor axis Kron radius  (always in units of pix)}
-  \item{axrat}{Axial ratio as given by min/maj}
-  \item{ang}{Orientation of the semi-major axis in degrees. This has the convention that 0= | (vertical), 45= \, 90= - (horizontal), 135= /, 180= | (vertical)}
-  \item{signif}{Approximate singificance of the detection using the Chi-Square distribution}
-  \item{FPlim}{Approximate false-positive significance limit below which one such source might appear spuriously on an image this large}
-  \item{flux_err}{Estimated total error in the flux for the segment}
-  \item{mag_err}{Estimated total error in the magnitude for the segment}
-  \item{flux_err_sky}{Sky subtraction component of the flux error}
-  \item{flux_err_skyRMS}{Sky RMS component of the flux error}
-  \item{flux_err_shot}{Object shot-noise component of the flux error (only if \option{gain} is provided)}
-  \item{sky_mean}{Mean flux of the sky over all segment pixels}
-  \item{sky_sum}{Total flux of the sky over all segment pixels}
-  \item{skyRMS_mean}{Mean value of the sky RMS over all segment pixels}
-  \item{Nedge}{Number of edge segment pixels that make up the outer edge of the segment}
-  \item{Nsky}{Number of edge segment pixels that are touching sky}
-  \item{Nobject}{Number of edge segment pixels that are touching another object segment}
-  \item{Nborder}{Number of edge segment pixels that are touching the \option{image} border}
-  \item{Nmask}{Number of edge segment pixels that are touching a masked pixel (note NAs in \option{image} are also treated as masked pixels)}
-  \item{edge_frac}{Fraction of edge segment pixels that are touching the sky i.e. \option{Nsky}\option{Nedge}, higher generally meaning more robust segmentation statistics}
-  \item{edge_excess}{Ratio of the number of edge pixels to the expected number given the elliptical geometry measurements of the segment. If this is larger than 1 then it is a sign that the segment geometry is irregular, and is likely a flag for compromised photometry}
-  \item{flag_border}{A binary flag telling the user which \option{image} borders the segment touches. The bottom of the \option{image} is flagged 1, left=2, top=4 and right=8. A summed combination of these flags indicate the segment is in a corner touching two borders: bottom-left=3, top-left=6, top-right=12, bottom-right=9.}
+If \option{stats}=TRUE then the function \code{\link{profoundSegimStats}} is called and the \option{segstats} part of the returned list will contain a data.frame else NULL (see \code{\link{profoundSegimStats}}).
 }
 \references{
 See ?EBImage::watershed
@@ -207,5 +152,5 @@ profoundMakeSegim(image, mask=mask, object=segim$objects, plot=TRUE)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ segmentation }% use one of  RShowDoc("KEYWORDS")
-\keyword{ watershed }% __ONLY ONE__ keyword per line
+\concept{ segmentation }% use one of  RShowDoc("KEYWORDS")
+\concept{ watershed }% __ONLY ONE__ keyword per line

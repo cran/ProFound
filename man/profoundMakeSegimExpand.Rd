@@ -106,9 +106,9 @@ Further arguments to be passed to \code{\link{magimage}}. Only relevant is \opti
 \details{
 The basic behaviour of \code{profoundMakeSegimExpand} and  \code{profoundMakeSegimDilate} is to intelligently expand out image segments already identified by, e.g., \code{\link{profoundMakeSegim}}.
 
-The \code{profoundMakeSegimExpand} defaults should work reasonably well on modern survey data (see Examples), but should the solution not be ideal try modifying these parameters (in order of impact priority): \option{skycut}, \option{dim}, \option{expandsigma}, \option{sigma}.
+The \code{profoundMakeSegimExpand} defaults should work reasonably well on modern survey data (see Examples), but should the solution not be ideal try modifying these parameters (in order of impact priority): \option{skycut} (or \option{SBlim}), \option{expandsigma}, \option{sigma}.
 
-\code{profoundMakeSegimDilate} is similar in nature to the pixel growing \code{objmask} routine in \code{IRAF} (see the \option{ngrow} and \option{agrow} description at \url{http://stsdas.stsci.edu/cgi-bin/gethelp.cgi?objmasks}). This similarity was discovered after implementation, but it is worth noting that the higher level curve of growth function \code{\link{profoundProFound}} is not trivially replicated by other astronomy tools.
+\code{profoundMakeSegimDilate} is similar in nature to the pixel growing \code{objmask} routine in \code{IRAF} (see the \option{ngrow} and \option{agrow} description at \url{http://iraf.noao.edu/projects/ccdmosaic/objmasks/objmasks.html}). This similarity was discovered after implementation, but it is worth noting that the higher level curve of growth function \code{\link{profoundProFound}} is not trivially replicated by other astronomy tools.
 
 The main difference between \code{profoundMakeSegimExpand} and  \code{profoundMakeSegimDilate} is the former grows the expansion a bit more organically, whereas the latter always gives new pixels to the brighter object if in doubt. That said, \code{profoundMakeSegimDilate} often gives very similar solutions and runs about 10+ times faster, so might be the only option for larger images.
 }
@@ -212,4 +212,4 @@ profoundMakeSegim(image, plot=TRUE, skycut = 0)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ segmentation }% use one of  RShowDoc("KEYWORDS")
+\concept{ segmentation }% use one of  RShowDoc("KEYWORDS")

@@ -28,7 +28,7 @@ lines(density(sky_clip_lo$x), col='blue')
 
 ## ---- eval=TRUE, fig.width=6, fig.height=6, dpi=40-----------------------
 magplot(density(sky_clip_lo$x), col='blue', grid=TRUE, xlab='Sky Pixel Value', ylab='PDF')
-lines(seq(-5,5,len=1e3), dnorm(seq(-5,5,len=1e3)), col='black', grid=TRUE)
+lines(seq(-5,5,len=1e3), dnorm(seq(-5,5,len=1e3)), col='black')
 
 ## ---- eval=TRUE----------------------------------------------------------
 median(sky_clip_lo$x)

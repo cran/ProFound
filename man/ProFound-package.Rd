@@ -12,12 +12,12 @@
 \tabular{ll}{
 Package: \tab ProFound\cr
 Type: \tab Package\cr
-Version: \tab 1.3.4\cr
-Date: \tab 2018-11-12\cr
+Version: \tab 1.14.1\cr
+Date: \tab 2020-12-03\cr
 License: \tab LGPL-3\cr
-Depends: \tab R (>= 3.0), FITSio, magicaxis (>= 2.0.3)\cr
-Imports: \tab RColorBrewer, data.table, celestial (>= 1.4.1)\cr
-Suggests: \tab ProFit, knitr, rmarkdown, EBImage, akima, imager, LaplacesDemon\cr
+Depends: \tab R (>= 3.1), FITSio, magicaxis (>= 2.0.8), Rcpp (>= 1.0.2)\cr
+Imports: \tab RColorBrewer, data.table, celestial (>= 1.4.1), foreach, doParallel, Rcpp\cr
+Suggests: \tab ProFit, knitr, rmarkdown, EBImage, imager, LaplacesDemon, Rfast, fastmatch, Rfits, Rwcs, snow, doSNOW, bigmemory\cr
 }
 }
 

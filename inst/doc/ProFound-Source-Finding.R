@@ -84,6 +84,8 @@ evalglobal=FALSE
 #  legend('topleft',legend='Segment Borders Left')
 #  magimage(out_profound$segim*(out_profound$segim %in% out_profound$segstats[out_profound$segstats$flag_border==4,"segID"]), col=c(0,rainbow(100)))
 #  legend('topleft',legend='Segment Borders Top')
+#  magimage(out_profound$segim*(out_profound$segim %in% out_profound$segstats[out_profound$segstats$flag_border==8,"segID"]), col=c(0,rainbow(100)))
+#  legend('topleft',legend='Segment Borders Right')
 
 ## ---- eval=evalglobal, fig.width=6, fig.height=6, dpi=40-----------------
 #  magimage(out_profound$segim*(out_profound$segim %in% out_profound$segstats[out_profound$segstats$edge_frac>0.8,"segID"]), col=c(0,rainbow(100)))

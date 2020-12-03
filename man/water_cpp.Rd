@@ -38,7 +38,7 @@ Numeric scalar; if \option{image} is above this level where segments touch then 
 Integer scalar; square offset of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
 }
   \item{skycut}{
-Numeric scalar; background value under which pixels are not considered anymore for watersheding.
+Numeric scalar; background value at or under which pixels are not considered anymore for watersheding (so with default \option{skycut}=0, 0 valued pixels and below are considered to be part of the sky).
 }
   \item{pixcut}{
 Integer scalar; the minimum number of pixels allowed in a segment. Below this number segments are set to 0, i.e. the background. This means they are not considered real objects in \code{\link{profoundProFound}}.
@@ -81,4 +81,4 @@ magimage(segim, col=c(0,rainbow(1e3)))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ watershed }% use one of  RShowDoc("KEYWORDS")
+\concept{ watershed }% use one of  RShowDoc("KEYWORDS")
